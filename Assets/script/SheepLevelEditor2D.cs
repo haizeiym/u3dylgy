@@ -500,8 +500,9 @@ public class SheepLevelEditor2D : MonoBehaviour
             if (cardData != null)
             {
                 levelCards.Remove(cardData);
-                Destroy(cardToDelete);
+                DestroyImmediate(cardToDelete);
                 cardObjects.Remove(cardToDelete);
+                Debug.Log($"删除2D卡片: ID={cardData.id}, 类型={cardData.type}, 层级={cardData.layer}");
             }
         }
     }
@@ -707,7 +708,10 @@ public class SheepLevelEditor2D : MonoBehaviour
             // 清除现有卡片对象
             foreach (var cardObj in cardObjects)
             {
-                Destroy(cardObj);
+                if (cardObj != null)
+                {
+                    DestroyImmediate(cardObj);
+                }
             }
             cardObjects.Clear();
             
@@ -730,15 +734,26 @@ public class SheepLevelEditor2D : MonoBehaviour
     
     void NewLevel()
     {
+        // 清除关卡数据
         levelCards.Clear();
+        
+        // 立即销毁所有卡片对象
         foreach (var cardObj in cardObjects)
         {
-            Destroy(cardObj);
+            if (cardObj != null)
+            {
+                DestroyImmediate(cardObj);
+            }
         }
         cardObjects.Clear();
         
+        // 更新关卡名称
         currentLevelName = $"Level2D_{currentLevelId}";
-        Debug.Log("新建2D关卡");
+        
+        // 强制更新显示
+        UpdateCardDisplay();
+        
+        Debug.Log($"新建2D关卡: {currentLevelName}");
     }
     
     void OnGUI()

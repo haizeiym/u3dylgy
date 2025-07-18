@@ -266,14 +266,14 @@ MonoBehaviour:
   isEditMode: 1
   showGrid: 1
   selectedLayer: 0
-  editorCamera2D: {fileID: 0}
+  editorCamera2D: {fileID: 489573530}
   cameraZoom: 5
   cameraPosition: {x: 0, y: 0}
   showLayerMasks: 1
   layerMaskColor: {r: 0.754717, g: 0.11747954, b: 0.11747954, a: 0.3}
   layerMaskHeight: 0.1
   showPlaceableArea: 1
-  placeableAreaVisualizer: {fileID: 0}
+  placeableAreaVisualizer: {fileID: 1378395891}
 --- !u!4 &264089273
 Transform:
   m_ObjectHideFlags: 0
@@ -287,7 +287,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &264089274
 MonoBehaviour:
@@ -435,7 +435,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1378395890
 GameObject:
@@ -487,5 +487,5 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
