@@ -766,7 +766,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         Debug.Log($"卡片大小已更新为: {cardSize}");
     }
     
-    void SaveLevel()
+    public void SaveLevel()
     {
         LevelData2D levelData = new LevelData2D
         {
@@ -1093,7 +1093,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         if (enableLayerPreview)
         {
             GUILayout.Label("正常层级颜色");
-            Color newNormalColor = GUILayout.ColorField(normalLayerColor);
+            Color newNormalColor = ColorField("正常颜色", normalLayerColor);
             if (newNormalColor != normalLayerColor)
             {
                 normalLayerColor = newNormalColor;
@@ -1101,7 +1101,7 @@ public class SheepLevelEditor2D : MonoBehaviour
             }
             
             GUILayout.Label("置灰层级颜色");
-            Color newGrayedColor = GUILayout.ColorField(grayedLayerColor);
+            Color newGrayedColor = ColorField("置灰颜色", grayedLayerColor);
             if (newGrayedColor != grayedLayerColor)
             {
                 grayedLayerColor = newGrayedColor;
@@ -1248,6 +1248,37 @@ public class SheepLevelEditor2D : MonoBehaviour
         GUILayout.Label(result.ToString());
         GUILayout.EndHorizontal();
         return result;
+    }
+    
+    Color ColorField(string label, Color color)
+    {
+        GUILayout.BeginHorizontal();
+        GUILayout.Label(label);
+        
+        // 显示当前颜色
+        GUI.backgroundColor = color;
+        if (GUILayout.Button("", GUILayout.Width(50), GUILayout.Height(20)))
+        {
+            // 简单的颜色选择：在几个预设颜色中循环
+            if (color == Color.white)
+                color = Color.red;
+            else if (color == Color.red)
+                color = Color.green;
+            else if (color == Color.green)
+                color = Color.blue;
+            else if (color == Color.blue)
+                color = Color.yellow;
+            else if (color == Color.yellow)
+                color = new Color(0.5f, 0.5f, 0.5f, 0.5f); // 灰色
+            else
+                color = Color.white;
+        }
+        GUI.backgroundColor = Color.white;
+        
+        GUILayout.Label($"R:{color.r:F2} G:{color.g:F2} B:{color.b:F2} A:{color.a:F2}");
+        GUILayout.EndHorizontal();
+        
+        return color;
     }
     
     void ValidateCurrentLevel()
