@@ -27,6 +27,9 @@ public class LevelData2D
     public float cardSize;
     public bool useCustomAreaSize;
     public Vector2 areaSize;
+    public bool enableLayerPreview;
+    public Color normalLayerColor;
+    public Color grayedLayerColor;
 }
 
 public class SheepLevelEditor2D : MonoBehaviour
@@ -66,6 +69,11 @@ public class SheepLevelEditor2D : MonoBehaviour
     [Header("区域大小设置")]
     public Vector2 areaSize = new Vector2(8.4f, 8.4f); // 可设置的区域大小
     public bool useCustomAreaSize = false; // 是否使用自定义区域大小
+    
+    [Header("层级预览设置")]
+    public bool enableLayerPreview = true; // 是否启用层级预览
+    public Color normalLayerColor = Color.white; // 正常层级颜色
+    public Color grayedLayerColor = new Color(0.5f, 0.5f, 0.5f, 0.5f); // 置灰层级颜色
     
     private List<CardData2D> levelCards = new List<CardData2D>();
     private List<GameObject> cardObjects = new List<GameObject>();
@@ -642,6 +650,12 @@ public class SheepLevelEditor2D : MonoBehaviour
         cardComponent.layer = cardData.layer;
         cardComponent.baseCardSize = cardSize; // 设置基础卡片大小
         
+        // 设置初始层级预览颜色
+        if (enableLayerPreview)
+        {
+            UpdateCardLayerPreview(cardObj, cardComponent);
+        }
+        
         cardObjects.Add(cardObj);
         
         Debug.Log($"创建2D卡片: ID={cardData.id}, 类型={cardData.type}, 层级={cardData.layer}");
@@ -686,13 +700,46 @@ public class SheepLevelEditor2D : MonoBehaviour
             CardObject2D cardComponent = cardObj.GetComponent<CardObject2D>();
             if (cardComponent != null)
             {
-                // 只显示当前层级的卡片
-                cardObj.SetActive(cardComponent.layer == selectedLayer);
+                if (enableLayerPreview)
+                {
+                    // 层级预览模式：显示所有层级，但颜色不同
+                    cardObj.SetActive(true);
+                    UpdateCardLayerPreview(cardObj, cardComponent);
+                }
+                else
+                {
+                    // 传统模式：只显示当前层级的卡片
+                    cardObj.SetActive(cardComponent.layer == selectedLayer);
+                    // 重置颜色为正常
+                    SpriteRenderer spriteRenderer = cardObj.GetComponent<SpriteRenderer>();
+                    if (spriteRenderer != null)
+                    {
+                        spriteRenderer.color = normalLayerColor;
+                    }
+                }
             }
         }
         
         // 更新层级遮罩
         UpdateLayerMasks();
+    }
+    
+    public void UpdateCardLayerPreview(GameObject cardObj, CardObject2D cardComponent)
+    {
+        SpriteRenderer spriteRenderer = cardObj.GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            if (cardComponent.layer == selectedLayer)
+            {
+                // 当前层级：正常颜色
+                spriteRenderer.color = normalLayerColor;
+            }
+            else
+            {
+                // 其他层级：置灰颜色
+                spriteRenderer.color = grayedLayerColor;
+            }
+        }
     }
     
     public void UpdateAllCardSizes()
@@ -731,7 +778,10 @@ public class SheepLevelEditor2D : MonoBehaviour
             cardSpacing = cardSpacing,
             cardSize = cardSize,
             useCustomAreaSize = useCustomAreaSize,
-            areaSize = areaSize
+            areaSize = areaSize,
+            enableLayerPreview = enableLayerPreview,
+            normalLayerColor = normalLayerColor,
+            grayedLayerColor = grayedLayerColor
         };
         
         string json = JsonUtility.ToJson(levelData, true);
@@ -770,6 +820,11 @@ public class SheepLevelEditor2D : MonoBehaviour
             // 加载区域大小设置
             useCustomAreaSize = levelData.useCustomAreaSize;
             areaSize = levelData.areaSize;
+            
+            // 加载层级预览设置
+            enableLayerPreview = levelData.enableLayerPreview;
+            normalLayerColor = levelData.normalLayerColor;
+            grayedLayerColor = levelData.grayedLayerColor;
             
             levelCards = new List<CardData2D>(levelData.cards);
             
@@ -821,6 +876,11 @@ public class SheepLevelEditor2D : MonoBehaviour
         // 重置区域大小设置
         useCustomAreaSize = false;
         areaSize = new Vector2(8.4f, 8.4f);
+        
+        // 重置层级预览设置
+        enableLayerPreview = true;
+        normalLayerColor = Color.white;
+        grayedLayerColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
         
         // 强制更新显示
         UpdateCardDisplay();
@@ -1020,6 +1080,39 @@ public class SheepLevelEditor2D : MonoBehaviour
         
         GUILayout.Space(10);
         
+        // 层级预览设置
+        GUILayout.Label("层级预览设置");
+        bool newEnableLayerPreview = GUILayout.Toggle(enableLayerPreview, "启用层级预览");
+        if (newEnableLayerPreview != enableLayerPreview)
+        {
+            enableLayerPreview = newEnableLayerPreview;
+            UpdateCardDisplay();
+            Debug.Log($"层级预览设置已更改: {(enableLayerPreview ? "启用" : "禁用")}");
+        }
+        
+        if (enableLayerPreview)
+        {
+            GUILayout.Label("正常层级颜色");
+            Color newNormalColor = GUILayout.ColorField(normalLayerColor);
+            if (newNormalColor != normalLayerColor)
+            {
+                normalLayerColor = newNormalColor;
+                UpdateCardDisplay();
+            }
+            
+            GUILayout.Label("置灰层级颜色");
+            Color newGrayedColor = GUILayout.ColorField(grayedLayerColor);
+            if (newGrayedColor != grayedLayerColor)
+            {
+                grayedLayerColor = newGrayedColor;
+                UpdateCardDisplay();
+            }
+            
+            GUILayout.Label("说明: 最上层正常显示，其他层级置灰");
+        }
+        
+        GUILayout.Space(10);
+        
         // 高级设置
         GUILayout.Label("高级设置");
         GUILayout.Label("调试模式");
@@ -1183,6 +1276,41 @@ public class SheepLevelEditor2D : MonoBehaviour
             Debug.LogError("❌ 2D关卡验证失败！请检查错误信息。");
         }
     }
+    
+    // 公共访问方法，用于测试脚本
+    public List<CardData2D> GetLevelCards()
+    {
+        return new List<CardData2D>(levelCards);
+    }
+    
+    public List<GameObject> GetCardObjects()
+    {
+        return new List<GameObject>(cardObjects);
+    }
+    
+    public void AddCardData(CardData2D cardData)
+    {
+        levelCards.Add(cardData);
+    }
+    
+    public void ClearCardObjects()
+    {
+        cardObjects.Clear();
+    }
+    
+    public void ClearAllCards()
+    {
+        levelCards.Clear();
+        foreach (var cardObj in cardObjects)
+        {
+            if (cardObj != null)
+            {
+                DestroyImmediate(cardObj);
+            }
+        }
+        cardObjects.Clear();
+        UpdateCardDisplay();
+    }
 }
 
 // 2D卡片对象组件
@@ -1192,16 +1320,49 @@ public class CardObject2D : MonoBehaviour
     public int cardType;
     public int layer;
     public float baseCardSize = 0.8f; // 基础卡片大小
+    private Color originalColor; // 保存原始颜色
+    private bool isHovered = false; // 是否正在悬停
+    
+    void Start()
+    {
+        // 保存原始颜色
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            originalColor = spriteRenderer.color;
+        }
+    }
     
     void OnMouseEnter()
     {
-        // 鼠标悬停效果 - 基于基础卡片大小
-        transform.localScale = Vector3.one * baseCardSize * 1.1f;
+        isHovered = true;
+        // 鼠标悬停时放大卡片并高亮
+        transform.localScale = Vector3.one * (baseCardSize * 1.2f);
+        
+        // 悬停时使用高亮颜色
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = Color.yellow; // 悬停高亮颜色
+        }
     }
     
     void OnMouseExit()
     {
-        // 恢复正常大小 - 基于基础卡片大小
+        isHovered = false;
+        // 鼠标离开时恢复原始大小和颜色
         transform.localScale = Vector3.one * baseCardSize;
+        
+        // 恢复原始颜色（由层级预览系统管理）
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            // 通知编辑器更新颜色
+            SheepLevelEditor2D editor = FindObjectOfType<SheepLevelEditor2D>();
+            if (editor != null)
+            {
+                editor.UpdateCardLayerPreview(gameObject, this);
+            }
+        }
     }
 } 
