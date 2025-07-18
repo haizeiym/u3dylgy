@@ -616,6 +616,42 @@ public class SheepLevelEditor2D : MonoBehaviour
         return maxId + 1;
     }
     
+    int GetNextLevelId()
+    {
+        int maxLevelId = 0;
+        string levelsPath = Path.Combine(Application.dataPath, "Levels");
+        
+        // 确保目录存在
+        if (Directory.Exists(levelsPath))
+        {
+            // 查找所有Level2D_*.json文件
+            string[] levelFiles = Directory.GetFiles(levelsPath, "Level2D_*.json");
+            
+            foreach (string file in levelFiles)
+            {
+                try
+                {
+                    // 从文件名中提取关卡ID
+                    string fileName = Path.GetFileNameWithoutExtension(file);
+                    if (fileName.StartsWith("Level2D_"))
+                    {
+                        string idStr = fileName.Substring("Level2D_".Length);
+                        if (int.TryParse(idStr, out int levelId))
+                        {
+                            maxLevelId = Mathf.Max(maxLevelId, levelId);
+                        }
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"解析关卡文件失败: {file}, 错误: {e.Message}");
+                }
+            }
+        }
+        
+        return maxLevelId + 1;
+    }
+    
     public void CreateCardObject2D(CardData2D cardData)
     {
         // 总是创建默认2D卡片，不依赖预制体
@@ -864,6 +900,10 @@ public class SheepLevelEditor2D : MonoBehaviour
     
     void NewLevel()
     {
+        // 获取下一个可用的关卡ID
+        int newLevelId = GetNextLevelId();
+        currentLevelId = newLevelId;
+        
         // 清除关卡数据
         levelCards.Clear();
         
@@ -893,7 +933,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         UpdateCardDisplay();
         UpdateGridAndMasks();
         
-        Debug.Log($"新建2D关卡: {currentLevelName}");
+        Debug.Log($"新建2D关卡: ID={currentLevelId}, 名称={currentLevelName}");
     }
     
     private Vector2 scrollPosition = Vector2.zero;
