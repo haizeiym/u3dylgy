@@ -129,6 +129,33 @@ public class GridFillTest : MonoBehaviour
                 }
             }
         }
+        
+        // 测试直接调用公共方法
+        if (levelEditor != null)
+        {
+            try
+            {
+                // 测试网格纹理生成
+                Sprite testSprite = levelEditor.CreateGridSprite();
+                if (testSprite != null)
+                {
+                    Debug.Log($"✓ 直接网格纹理生成成功，大小: {testSprite.rect.width} x {testSprite.rect.height}");
+                }
+                
+                // 测试网格线间距计算
+                int spacing = levelEditor.CalculateGridLineSpacing(128);
+                Debug.Log($"✓ 网格线间距计算成功: {spacing}");
+                
+                // 测试网格更新方法
+                levelEditor.UpdateGridForCardSize();
+                Debug.Log("✓ 网格更新方法调用成功");
+                
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"✗ 公共方法访问失败: {e.Message}");
+            }
+        }
     }
     
     void TestGridAlignment()
