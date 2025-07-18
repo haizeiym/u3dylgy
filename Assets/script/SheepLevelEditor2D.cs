@@ -616,7 +616,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         return maxId + 1;
     }
     
-    void CreateCardObject2D(CardData2D cardData)
+    public void CreateCardObject2D(CardData2D cardData)
     {
         // 总是创建默认2D卡片，不依赖预制体
         GameObject cardObj = new GameObject($"Card_{cardData.id}");
