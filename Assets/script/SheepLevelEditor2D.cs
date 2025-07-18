@@ -585,13 +585,13 @@ public class SheepLevelEditor2D : MonoBehaviour
         return new Vector2(x, y);
     }
     
-    bool IsPositionOccupied2D(Vector2 position)
+    public bool IsPositionOccupied2D(Vector2 position)
     {
         // 只检查同一层级的卡片是否占用位置
         return levelCards.Exists(c => c.layer == selectedLayer && Vector2.Distance(c.position, position) < cardSize * 0.5f);
     }
     
-    bool IsPositionInGridBounds2D(Vector2 position)
+    public bool IsPositionInGridBounds2D(Vector2 position)
     {
         // 使用实际区域大小计算边界
         Vector2 actualAreaSize = GetActualAreaSize();
