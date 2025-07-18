@@ -31,6 +31,7 @@ public class PlaceableAreaVisualizer : MonoBehaviour
         // 初始化缓存值
         lastGridSize = levelEditor.gridSize;
         lastCardSpacing = levelEditor.cardSpacing;
+        lastAreaSize = GetActualAreaSize();
         
         CreatePlaceableArea();
         CreateBorder();
@@ -39,17 +40,21 @@ public class PlaceableAreaVisualizer : MonoBehaviour
     
     private Vector2 lastGridSize;
     private float lastCardSpacing;
+    private Vector2 lastAreaSize;
     
     void Update()
     {
         if (levelEditor != null && showPlaceableArea)
         {
-            // 只在网格大小或卡片间距发生变化时才更新
-            if (lastGridSize != levelEditor.gridSize || lastCardSpacing != levelEditor.cardSpacing)
+            // 检查网格大小、卡片间距或区域大小是否发生变化
+            Vector2 currentAreaSize = GetActualAreaSize();
+            if (lastGridSize != levelEditor.gridSize || lastCardSpacing != levelEditor.cardSpacing || 
+                lastAreaSize != currentAreaSize)
             {
                 UpdatePlaceableArea();
                 lastGridSize = levelEditor.gridSize;
                 lastCardSpacing = levelEditor.cardSpacing;
+                lastAreaSize = currentAreaSize;
             }
         }
     }
@@ -97,19 +102,23 @@ public class PlaceableAreaVisualizer : MonoBehaviour
         gridLinesObject = new GameObject("GridLines");
         gridLinesObject.transform.position = Vector3.zero;
         
+        Vector2 actualAreaSize = GetActualAreaSize();
+        
         // 创建水平线
         for (int y = 0; y <= levelEditor.gridSize.y; y++)
         {
-            CreateGridLine(new Vector2(-levelEditor.cardSpacing * 0.5f, y * levelEditor.cardSpacing - levelEditor.cardSpacing * 0.5f),
-                          new Vector2((levelEditor.gridSize.x - 1) * levelEditor.cardSpacing + levelEditor.cardSpacing * 0.5f, y * levelEditor.cardSpacing - levelEditor.cardSpacing * 0.5f),
+            float yPos = y * levelEditor.cardSpacing - levelEditor.cardSpacing * 0.5f;
+            CreateGridLine(new Vector2(-actualAreaSize.x * 0.5f, yPos),
+                          new Vector2(actualAreaSize.x * 0.5f, yPos),
                           true);
         }
         
         // 创建垂直线
         for (int x = 0; x <= levelEditor.gridSize.x; x++)
         {
-            CreateGridLine(new Vector2(x * levelEditor.cardSpacing - levelEditor.cardSpacing * 0.5f, -levelEditor.cardSpacing * 0.5f),
-                          new Vector2(x * levelEditor.cardSpacing - levelEditor.cardSpacing * 0.5f, (levelEditor.gridSize.y - 1) * levelEditor.cardSpacing + levelEditor.cardSpacing * 0.5f),
+            float xPos = x * levelEditor.cardSpacing - levelEditor.cardSpacing * 0.5f;
+            CreateGridLine(new Vector2(xPos, -actualAreaSize.y * 0.5f),
+                          new Vector2(xPos, actualAreaSize.y * 0.5f),
                           false);
         }
     }
@@ -209,18 +218,27 @@ public class PlaceableAreaVisualizer : MonoBehaviour
     {
         if (placeableAreaObject != null && levelEditor != null)
         {
-            float areaWidth = (levelEditor.gridSize.x - 1) * levelEditor.cardSpacing;
-            float areaHeight = (levelEditor.gridSize.y - 1) * levelEditor.cardSpacing;
-            placeableAreaObject.transform.localScale = new Vector3(areaWidth, areaHeight, 1);
+            Vector2 actualAreaSize = GetActualAreaSize();
+            placeableAreaObject.transform.localScale = new Vector3(actualAreaSize.x, actualAreaSize.y, 1);
         }
+    }
+    
+    Vector2 GetActualAreaSize()
+    {
+        if (levelEditor != null)
+        {
+            return levelEditor.GetActualAreaSize();
+        }
+        return Vector2.zero;
     }
     
     void UpdateBorderSize()
     {
         if (borderObject != null && levelEditor != null)
         {
-            float borderWidth = (levelEditor.gridSize.x - 1) * levelEditor.cardSpacing + this.borderWidth * 2;
-            float borderHeight = (levelEditor.gridSize.y - 1) * levelEditor.cardSpacing + this.borderWidth * 2;
+            Vector2 actualAreaSize = GetActualAreaSize();
+            float borderWidth = actualAreaSize.x + this.borderWidth * 2;
+            float borderHeight = actualAreaSize.y + this.borderWidth * 2;
             borderObject.transform.localScale = new Vector3(borderWidth, borderHeight, 1);
         }
     }

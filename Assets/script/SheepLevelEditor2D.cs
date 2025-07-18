@@ -25,6 +25,8 @@ public class LevelData2D
     public Vector2 gridSize;
     public float cardSpacing;
     public float cardSize;
+    public bool useCustomAreaSize;
+    public Vector2 areaSize;
 }
 
 public class SheepLevelEditor2D : MonoBehaviour
@@ -61,10 +63,28 @@ public class SheepLevelEditor2D : MonoBehaviour
     public bool showPlaceableArea = true;
     public PlaceableAreaVisualizer placeableAreaVisualizer;
     
+    [Header("区域大小设置")]
+    public Vector2 areaSize = new Vector2(8.4f, 8.4f); // 可设置的区域大小
+    public bool useCustomAreaSize = false; // 是否使用自定义区域大小
+    
     private List<CardData2D> levelCards = new List<CardData2D>();
     private List<GameObject> cardObjects = new List<GameObject>();
     private List<GameObject> layerMaskObjects = new List<GameObject>();
     private Vector3 lastMousePosition;
+    
+    // 计算实际区域大小
+    public Vector2 GetActualAreaSize()
+    {
+        if (useCustomAreaSize)
+        {
+            return areaSize;
+        }
+        else
+        {
+            // 使用网格大小和卡片间距计算
+            return new Vector2((gridSize.x - 1) * cardSpacing, (gridSize.y - 1) * cardSpacing);
+        }
+    }
     
     void Start()
     {
@@ -113,9 +133,8 @@ public class SheepLevelEditor2D : MonoBehaviour
         gridRenderer.sortingOrder = -1;
         
         // 设置网格大小覆盖整个可放置区域
-        float gridWidth = (gridSize.x - 1) * cardSpacing;
-        float gridHeight = (gridSize.y - 1) * cardSpacing;
-        gridBackground.transform.localScale = new Vector3(gridWidth, gridHeight, 1);
+        Vector2 actualAreaSize = GetActualAreaSize();
+        gridBackground.transform.localScale = new Vector3(actualAreaSize.x, actualAreaSize.y, 1);
         
         // 更新网格以适应卡片大小
         UpdateGridForCardSize();
@@ -191,11 +210,10 @@ public class SheepLevelEditor2D : MonoBehaviour
                 gridRenderer.sprite = CreateGridSprite();
                 
                 // 更新网格大小以覆盖整个可放置区域
-                float gridWidth = (gridSize.x - 1) * cardSpacing;
-                float gridHeight = (gridSize.y - 1) * cardSpacing;
-                gridBackground.transform.localScale = new Vector3(gridWidth, gridHeight, 1);
+                Vector2 actualAreaSize = GetActualAreaSize();
+                gridBackground.transform.localScale = new Vector3(actualAreaSize.x, actualAreaSize.y, 1);
                 
-                Debug.Log($"网格已更新: 卡片大小={cardSize}, 间距={cardSpacing}, 网格大小={gridWidth} x {gridHeight}");
+                Debug.Log($"网格已更新: 卡片大小={cardSize}, 间距={cardSpacing}, 区域大小={actualAreaSize.x} x {actualAreaSize.y}");
             }
         }
     }
@@ -226,9 +244,8 @@ public class SheepLevelEditor2D : MonoBehaviour
         maskRenderer.sortingOrder = -2; // 在网格后面，但在背景前面
         
         // 设置遮罩大小覆盖整个可放置区域
-        float maskWidth = (gridSize.x - 1) * cardSpacing;
-        float maskHeight = (gridSize.y - 1) * cardSpacing;
-        maskObj.transform.localScale = new Vector3(maskWidth, maskHeight, 1);
+        Vector2 actualAreaSize = GetActualAreaSize();
+        maskObj.transform.localScale = new Vector3(actualAreaSize.x, actualAreaSize.y, 1);
         
         layerMaskObjects.Add(maskObj);
     }
@@ -308,30 +325,28 @@ public class SheepLevelEditor2D : MonoBehaviour
     void UpdateLayerMaskSizes()
     {
         // 更新所有层级遮罩的大小以匹配可放置区域
-        float maskWidth = (gridSize.x - 1) * cardSpacing;
-        float maskHeight = (gridSize.y - 1) * cardSpacing;
+        Vector2 actualAreaSize = GetActualAreaSize();
         
         foreach (GameObject maskObj in layerMaskObjects)
         {
             if (maskObj != null)
             {
-                maskObj.transform.localScale = new Vector3(maskWidth, maskHeight, 1);
+                maskObj.transform.localScale = new Vector3(actualAreaSize.x, actualAreaSize.y, 1);
             }
         }
         
-        Debug.Log($"层级遮罩大小已更新: {maskWidth} x {maskHeight}");
+        Debug.Log($"层级遮罩大小已更新: {actualAreaSize.x} x {actualAreaSize.y}");
     }
     
     public void UpdateGridAndMasks()
     {
         // 更新网格大小覆盖整个可放置区域
         GameObject gridBackground = GameObject.Find("GridBackground");
-        float gridWidth = (gridSize.x - 1) * cardSpacing;
-        float gridHeight = (gridSize.y - 1) * cardSpacing;
+        Vector2 actualAreaSize = GetActualAreaSize();
         
         if (gridBackground != null)
         {
-            gridBackground.transform.localScale = new Vector3(gridWidth, gridHeight, 1);
+            gridBackground.transform.localScale = new Vector3(actualAreaSize.x, actualAreaSize.y, 1);
         }
         
         // 更新层级遮罩大小
@@ -343,7 +358,7 @@ public class SheepLevelEditor2D : MonoBehaviour
             placeableAreaVisualizer.SetVisible(showPlaceableArea);
         }
         
-        Debug.Log($"网格和遮罩已更新: 网格大小={gridSize}, 间距={cardSpacing}, 可放置区域={gridWidth} x {gridHeight}");
+        Debug.Log($"网格和遮罩已更新: 网格大小={gridSize}, 间距={cardSpacing}, 区域大小={actualAreaSize.x} x {actualAreaSize.y}");
     }
     
     void Update()
@@ -570,14 +585,15 @@ public class SheepLevelEditor2D : MonoBehaviour
     
     bool IsPositionInGridBounds2D(Vector2 position)
     {
-        // 计算网格边界
-        float halfGridWidth = (gridSize.x - 1) * cardSpacing * 0.5f;
-        float halfGridHeight = (gridSize.y - 1) * cardSpacing * 0.5f;
+        // 使用实际区域大小计算边界
+        Vector2 actualAreaSize = GetActualAreaSize();
+        float halfAreaWidth = actualAreaSize.x * 0.5f;
+        float halfAreaHeight = actualAreaSize.y * 0.5f;
         
-        // 检查位置是否在网格范围内
-        bool inBounds = Mathf.Abs(position.x) <= halfGridWidth && Mathf.Abs(position.y) <= halfGridHeight;
+        // 检查位置是否在区域范围内
+        bool inBounds = Mathf.Abs(position.x) <= halfAreaWidth && Mathf.Abs(position.y) <= halfAreaHeight;
         
-        Debug.Log($"网格边界检查: 位置={position}, 网格大小={gridSize}, 卡片间距={cardSpacing}, 边界范围=±({halfGridWidth}, {halfGridHeight}), 在范围内={inBounds}");
+        Debug.Log($"区域边界检查: 位置={position}, 区域大小={actualAreaSize}, 边界范围=±({halfAreaWidth}, {halfAreaHeight}), 在范围内={inBounds}");
         
         return inBounds;
     }
@@ -712,11 +728,11 @@ public class SheepLevelEditor2D : MonoBehaviour
             cards = new List<CardData2D>(levelCards),
             totalLayers = totalLayers,
             gridSize = gridSize,
-            cardSpacing = cardSpacing
+            cardSpacing = cardSpacing,
+            cardSize = cardSize,
+            useCustomAreaSize = useCustomAreaSize,
+            areaSize = areaSize
         };
-        
-        // 保存卡片大小信息到关卡数据中
-        levelData.cardSize = cardSize;
         
         string json = JsonUtility.ToJson(levelData, true);
         string filePath = Path.Combine(Application.dataPath, "Levels", $"Level2D_{currentLevelId}.json");
@@ -750,6 +766,10 @@ public class SheepLevelEditor2D : MonoBehaviour
             {
                 cardSize = levelData.cardSize;
             }
+            
+            // 加载区域大小设置
+            useCustomAreaSize = levelData.useCustomAreaSize;
+            areaSize = levelData.areaSize;
             
             levelCards = new List<CardData2D>(levelData.cards);
             
@@ -798,8 +818,13 @@ public class SheepLevelEditor2D : MonoBehaviour
         // 更新关卡名称
         currentLevelName = $"Level2D_{currentLevelId}";
         
+        // 重置区域大小设置
+        useCustomAreaSize = false;
+        areaSize = new Vector2(8.4f, 8.4f);
+        
         // 强制更新显示
         UpdateCardDisplay();
+        UpdateGridAndMasks();
         
         Debug.Log($"新建2D关卡: {currentLevelName}");
     }
@@ -952,6 +977,45 @@ public class SheepLevelEditor2D : MonoBehaviour
             {
                 placeableAreaVisualizer.SetVisible(showPlaceableArea);
             }
+        }
+        
+        GUILayout.Space(10);
+        
+        // 区域大小设置
+        GUILayout.Label("区域大小设置");
+        bool newUseCustomAreaSize = GUILayout.Toggle(useCustomAreaSize, "使用自定义区域大小");
+        if (newUseCustomAreaSize != useCustomAreaSize)
+        {
+            useCustomAreaSize = newUseCustomAreaSize;
+            UpdateGridAndMasks();
+            Debug.Log($"自定义区域大小设置已更改: {(useCustomAreaSize ? "启用" : "禁用")}");
+        }
+        
+        if (useCustomAreaSize)
+        {
+            // 区域宽度
+            float newAreaSizeX = GUILayout.HorizontalSlider(areaSize.x, 2f, 20f);
+            GUILayout.Label($"区域宽度: {newAreaSizeX:F2}");
+            if (newAreaSizeX != areaSize.x)
+            {
+                areaSize.x = newAreaSizeX;
+                UpdateGridAndMasks();
+            }
+            
+            // 区域高度
+            float newAreaSizeY = GUILayout.HorizontalSlider(areaSize.y, 2f, 20f);
+            GUILayout.Label($"区域高度: {newAreaSizeY:F2}");
+            if (newAreaSizeY != areaSize.y)
+            {
+                areaSize.y = newAreaSizeY;
+                UpdateGridAndMasks();
+            }
+        }
+        else
+        {
+            Vector2 actualAreaSize = GetActualAreaSize();
+            GUILayout.Label($"当前区域大小: {actualAreaSize.x:F2} x {actualAreaSize.y:F2}");
+            GUILayout.Label("(基于网格大小和卡片间距自动计算)");
         }
         
         GUILayout.Space(10);
