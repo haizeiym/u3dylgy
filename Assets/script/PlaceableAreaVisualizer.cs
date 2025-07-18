@@ -28,16 +28,29 @@ public class PlaceableAreaVisualizer : MonoBehaviour
             return;
         }
         
+        // 初始化缓存值
+        lastGridSize = levelEditor.gridSize;
+        lastCardSpacing = levelEditor.cardSpacing;
+        
         CreatePlaceableArea();
         CreateBorder();
         CreateGridLines();
     }
     
+    private Vector2 lastGridSize;
+    private float lastCardSpacing;
+    
     void Update()
     {
         if (levelEditor != null && showPlaceableArea)
         {
-            UpdatePlaceableArea();
+            // 只在网格大小或卡片间距发生变化时才更新
+            if (lastGridSize != levelEditor.gridSize || lastCardSpacing != levelEditor.cardSpacing)
+            {
+                UpdatePlaceableArea();
+                lastGridSize = levelEditor.gridSize;
+                lastCardSpacing = levelEditor.cardSpacing;
+            }
         }
     }
     
@@ -74,6 +87,12 @@ public class PlaceableAreaVisualizer : MonoBehaviour
     void CreateGridLines()
     {
         if (!showGridLines) return;
+        
+        // 如果GridLines对象已存在，先销毁它
+        if (gridLinesObject != null)
+        {
+            DestroyImmediate(gridLinesObject);
+        }
         
         gridLinesObject = new GameObject("GridLines");
         gridLinesObject.transform.position = Vector3.zero;
@@ -213,7 +232,10 @@ public class PlaceableAreaVisualizer : MonoBehaviour
             // 清除现有网格线
             foreach (Transform child in gridLinesObject.transform)
             {
-                Destroy(child.gameObject);
+                if (child != null)
+                {
+                    DestroyImmediate(child.gameObject);
+                }
             }
             
             // 重新创建网格线
