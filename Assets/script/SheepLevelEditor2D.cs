@@ -1352,7 +1352,6 @@ public class CardObject2D : MonoBehaviour
     public int layer;
     public float baseCardSize = 0.8f; // 基础卡片大小
     private Color originalColor; // 保存原始颜色
-    private bool isHovered = false; // 是否正在悬停
     
     void Start()
     {
@@ -1366,7 +1365,6 @@ public class CardObject2D : MonoBehaviour
     
     void OnMouseEnter()
     {
-        isHovered = true;
         // 鼠标悬停时放大卡片并高亮
         transform.localScale = Vector3.one * (baseCardSize * 1.2f);
         
@@ -1380,7 +1378,6 @@ public class CardObject2D : MonoBehaviour
     
     void OnMouseExit()
     {
-        isHovered = false;
         // 鼠标离开时恢复原始大小和颜色
         transform.localScale = Vector3.one * baseCardSize;
         
