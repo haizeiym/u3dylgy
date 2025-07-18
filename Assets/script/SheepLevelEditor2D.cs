@@ -756,6 +756,8 @@ public class SheepLevelEditor2D : MonoBehaviour
         Debug.Log($"新建2D关卡: {currentLevelName}");
     }
     
+    private Vector2 scrollPosition = Vector2.zero;
+    
     void OnGUI()
     {
         if (!isEditMode) return;
@@ -769,6 +771,9 @@ public class SheepLevelEditor2D : MonoBehaviour
         GUILayout.Label("羊了个羊2D关卡编辑器", GUI.skin.box);
         
         GUILayout.Space(10);
+        
+        // 开始滚动视图
+        scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(Screen.height - 100));
         
         // 关卡信息
         GUILayout.Label("关卡信息");
@@ -880,6 +885,58 @@ public class SheepLevelEditor2D : MonoBehaviour
         
         GUILayout.Space(10);
         
+        // 高级设置
+        GUILayout.Label("高级设置");
+        GUILayout.Label("调试模式");
+        bool debugMode = GUILayout.Toggle(false, "启用调试日志");
+        
+        GUILayout.Label("性能设置");
+        bool highPerformance = GUILayout.Toggle(true, "高性能模式");
+        
+        GUILayout.Label("显示设置");
+        bool showFPS = GUILayout.Toggle(false, "显示FPS");
+        bool showMemory = GUILayout.Toggle(false, "显示内存使用");
+        
+        GUILayout.Space(5);
+        
+        GUILayout.Label("相机高级设置");
+        float cameraSpeed = GUILayout.HorizontalSlider(1f, 0.1f, 5f);
+        GUILayout.Label($"相机移动速度: {cameraSpeed:F1}");
+        
+        float zoomSpeed = GUILayout.HorizontalSlider(1f, 0.1f, 3f);
+        GUILayout.Label($"缩放速度: {zoomSpeed:F1}");
+        
+        GUILayout.Space(5);
+        
+        GUILayout.Label("网格高级设置");
+        bool showGridNumbers = GUILayout.Toggle(false, "显示网格编号");
+        bool showGridCoordinates = GUILayout.Toggle(false, "显示坐标");
+        
+        float gridLineWidth = GUILayout.HorizontalSlider(0.02f, 0.01f, 0.1f);
+        GUILayout.Label($"网格线宽度: {gridLineWidth:F3}");
+        
+        GUILayout.Space(5);
+        
+        GUILayout.Label("卡片高级设置");
+        bool showCardIDs = GUILayout.Toggle(false, "显示卡片ID");
+        bool showCardTypes = GUILayout.Toggle(false, "显示卡片类型");
+        
+        float cardHoverScale = GUILayout.HorizontalSlider(1.2f, 1.0f, 2.0f);
+        GUILayout.Label($"悬停缩放: {cardHoverScale:F1}");
+        
+        GUILayout.Space(5);
+        
+        GUILayout.Label("导出设置");
+        bool autoSave = GUILayout.Toggle(true, "自动保存");
+        bool backupLevels = GUILayout.Toggle(true, "备份关卡");
+        
+        GUILayout.Label("导出格式");
+        bool exportJSON = GUILayout.Toggle(true, "JSON格式");
+        bool exportXML = GUILayout.Toggle(false, "XML格式");
+        bool exportBinary = GUILayout.Toggle(false, "二进制格式");
+        
+        GUILayout.Space(10);
+        
         // 操作按钮
         GUILayout.Label("操作");
         GUILayout.BeginHorizontal();
@@ -923,6 +980,9 @@ public class SheepLevelEditor2D : MonoBehaviour
         GUILayout.Label("Ctrl+S: 保存关卡");
         GUILayout.Label("Ctrl+L: 加载关卡");
         GUILayout.Label("Ctrl+N: 新建关卡");
+        
+        // 结束滚动视图
+        GUILayout.EndScrollView();
         
         GUILayout.EndVertical();
         GUILayout.EndArea();
