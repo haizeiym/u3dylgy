@@ -898,7 +898,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         }
     }
     
-    void NewLevel()
+    public void NewLevel()
     {
         // 获取下一个可用的关卡ID
         int newLevelId = GetNextLevelId();
