@@ -259,9 +259,14 @@ public class SheepLevelEditor2D : MonoBehaviour
                     // 当前编辑层级不显示遮罩，其他层级显示遮罩
                     bool shouldShow = showLayerMasks && i != selectedLayer;
                     maskRenderer.enabled = shouldShow;
+                    
+                    // 更新遮罩颜色（包括透明度）
+                    maskRenderer.color = layerMaskColor;
                 }
             }
         }
+        
+        Debug.Log($"层级遮罩已更新: 显示={showLayerMasks}, 当前层级={selectedLayer}, 遮罩数量={layerMaskObjects.Count}");
     }
     
     void UpdateLayerMaskSizes()
@@ -368,8 +373,15 @@ public class SheepLevelEditor2D : MonoBehaviour
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll != 0 && !Input.GetKey(KeyCode.LeftControl))
         {
+            int oldLayer = selectedLayer;
             selectedLayer = Mathf.Clamp(selectedLayer + (scroll > 0 ? 1 : -1), 0, totalLayers - 1);
-            UpdateCardDisplay();
+            
+            if (oldLayer != selectedLayer)
+            {
+                UpdateCardDisplay();
+                UpdateLayerMasks(); // 更新层级遮罩显示
+                Debug.Log($"层级已切换到: {selectedLayer}");
+            }
         }
         
         // 数字键切换卡片类型
@@ -790,7 +802,16 @@ public class SheepLevelEditor2D : MonoBehaviour
         // 编辑器设置
         GUILayout.Label("编辑器设置");
         totalLayers = IntField("总层数", totalLayers);
-        selectedLayer = IntSlider("当前层级", selectedLayer, 0, totalLayers - 1);
+        
+        int newSelectedLayer = IntSlider("当前层级", selectedLayer, 0, totalLayers - 1);
+        if (newSelectedLayer != selectedLayer)
+        {
+            selectedLayer = newSelectedLayer;
+            UpdateCardDisplay();
+            UpdateLayerMasks(); // 更新层级遮罩显示
+            Debug.Log($"GUI层级已切换到: {selectedLayer}");
+        }
+        
         currentCardType = IntSlider("卡片类型", currentCardType, 0, maxCardTypes - 1);
         
         // 网格设置
@@ -854,7 +875,19 @@ public class SheepLevelEditor2D : MonoBehaviour
         if (newShowLayerMasks != showLayerMasks)
         {
             showLayerMasks = newShowLayerMasks;
-            UpdateLayerMasks();
+            
+            if (showLayerMasks)
+            {
+                // 如果开启遮罩，重新创建所有遮罩
+                CreateLayerMasks();
+            }
+            else
+            {
+                // 如果关闭遮罩，清除所有遮罩
+                ClearLayerMasks();
+            }
+            
+            Debug.Log($"层级遮罩设置已更改: {(showLayerMasks ? "显示" : "隐藏")}");
         }
         
         if (showLayerMasks)
