@@ -695,6 +695,8 @@ public class SheepLevelEditor2D : MonoBehaviour
     
     public void UpdateCardDisplay()
     {
+        Debug.Log($"更新卡片显示 - 层级预览: {enableLayerPreview}, 当前层级: {selectedLayer}");
+        
         foreach (var cardObj in cardObjects)
         {
             CardObject2D cardComponent = cardObj.GetComponent<CardObject2D>();
@@ -702,20 +704,23 @@ public class SheepLevelEditor2D : MonoBehaviour
             {
                 if (enableLayerPreview)
                 {
-                    // 层级预览模式：显示所有层级，但颜色不同
+                    // 层级预览模式：显示所有层级的卡片，但颜色不同
                     cardObj.SetActive(true);
                     UpdateCardLayerPreview(cardObj, cardComponent);
+                    Debug.Log($"层级预览模式 - 卡片ID:{cardComponent.cardId}, 层级:{cardComponent.layer}, 激活:true");
                 }
                 else
                 {
                     // 传统模式：只显示当前层级的卡片
-                    cardObj.SetActive(cardComponent.layer == selectedLayer);
+                    bool shouldShow = cardComponent.layer == selectedLayer;
+                    cardObj.SetActive(shouldShow);
                     // 重置颜色为正常
                     SpriteRenderer spriteRenderer = cardObj.GetComponent<SpriteRenderer>();
                     if (spriteRenderer != null)
                     {
                         spriteRenderer.color = normalLayerColor;
                     }
+                    Debug.Log($"传统模式 - 卡片ID:{cardComponent.cardId}, 层级:{cardComponent.layer}, 激活:{shouldShow}");
                 }
             }
         }
@@ -733,11 +738,13 @@ public class SheepLevelEditor2D : MonoBehaviour
             {
                 // 当前层级：正常颜色
                 spriteRenderer.color = normalLayerColor;
+                Debug.Log($"卡片ID:{cardComponent.cardId} - 当前层级({cardComponent.layer})，使用正常颜色: {normalLayerColor}");
             }
             else
             {
                 // 其他层级：置灰颜色
                 spriteRenderer.color = grayedLayerColor;
+                Debug.Log($"卡片ID:{cardComponent.cardId} - 其他层级({cardComponent.layer})，使用置灰颜色: {grayedLayerColor}");
             }
         }
     }
