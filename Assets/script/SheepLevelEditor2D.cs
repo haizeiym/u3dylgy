@@ -123,18 +123,26 @@ public class SheepLevelEditor2D : MonoBehaviour
     
     Sprite CreateGridSprite()
     {
-        // 创建简单的网格纹理
-        int textureSize = 64;
+        // 创建动态网格纹理，根据卡片间距调整网格密度
+        int textureSize = 128; // 增加纹理大小以获得更好的分辨率
         Texture2D texture = new Texture2D(textureSize, textureSize);
         
         Color gridColor = Color.gray;
         Color bgColor = new Color(0.1f, 0.1f, 0.1f, 0.3f);
         
+        // 计算网格线间距，使其与卡片间距匹配
+        // 纹理代表一个卡片间距的大小，所以我们需要在纹理中显示网格线
+        int gridLineSpacing = CalculateGridLineSpacing(textureSize);
+        
         for (int x = 0; x < textureSize; x++)
         {
             for (int y = 0; y < textureSize; y++)
             {
-                if (x % 8 == 0 || y % 8 == 0)
+                // 创建网格线，在边缘和中心位置显示
+                bool isGridLine = (x % gridLineSpacing == 0 || y % gridLineSpacing == 0) ||
+                                 (x == 0 || x == textureSize - 1 || y == 0 || y == textureSize - 1);
+                
+                if (isGridLine)
                 {
                     texture.SetPixel(x, y, gridColor);
                 }
@@ -149,17 +157,45 @@ public class SheepLevelEditor2D : MonoBehaviour
         return Sprite.Create(texture, new Rect(0, 0, textureSize, textureSize), new Vector2(0.5f, 0.5f));
     }
     
+    int CalculateGridLineSpacing(int textureSize)
+    {
+        // 根据卡片间距计算合适的网格线间距
+        // 目标是让网格线能够清晰地显示卡片放置位置
+        float spacingRatio = cardSpacing / cardSize;
+        
+        // 根据间距比例调整网格密度
+        if (spacingRatio >= 2.0f)
+        {
+            return textureSize / 4; // 大间距，稀疏网格
+        }
+        else if (spacingRatio >= 1.5f)
+        {
+            return textureSize / 6; // 中等间距，中等密度网格
+        }
+        else
+        {
+            return textureSize / 8; // 小间距，密集网格
+        }
+    }
+    
     void UpdateGridForCardSize()
     {
-        // 根据卡片大小调整网格密度
+        // 根据卡片大小和间距调整网格
         GameObject gridBackground = GameObject.Find("GridBackground");
         if (gridBackground != null)
         {
             SpriteRenderer gridRenderer = gridBackground.GetComponent<SpriteRenderer>();
             if (gridRenderer != null)
             {
-                // 调整网格纹理以适应卡片大小
+                // 重新创建网格纹理以适应新的卡片大小和间距
                 gridRenderer.sprite = CreateGridSprite();
+                
+                // 更新网格大小以覆盖整个可放置区域
+                float gridWidth = (gridSize.x - 1) * cardSpacing;
+                float gridHeight = (gridSize.y - 1) * cardSpacing;
+                gridBackground.transform.localScale = new Vector3(gridWidth, gridHeight, 1);
+                
+                Debug.Log($"网格已更新: 卡片大小={cardSize}, 间距={cardSpacing}, 网格大小={gridWidth} x {gridHeight}");
             }
         }
     }
@@ -843,6 +879,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         {
             cardSpacing = newCardSpacing;
             UpdateGridAndMasks();
+            UpdateGridForCardSize(); // 更新网格纹理以适应新的间距
         }
         
         // 卡片大小设置
@@ -854,6 +891,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         {
             cardSize = newCardSize;
             UpdateAllCardSizes();
+            UpdateGridForCardSize(); // 更新网格纹理以适应新的大小
         }
         
         GUILayout.Space(10);
