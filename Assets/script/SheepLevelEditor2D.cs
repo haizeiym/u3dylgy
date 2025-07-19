@@ -82,10 +82,7 @@ public class SheepLevelEditor2D : MonoBehaviour
     public float cameraZoom = 5f;
     public Vector2 cameraPosition = Vector2.zero;
     
-    [Header("层级遮罩设置")]
-    public bool showLayerMasks = true;
-    public Color layerMaskColor = new Color(0.5f, 0.5f, 0.5f, 0.3f);
-    public float layerMaskHeight = 0.1f;
+
     
     [Header("可放置区域可视化")]
     public bool showPlaceableArea = true;
@@ -122,7 +119,7 @@ public class SheepLevelEditor2D : MonoBehaviour
     
     private List<CardData2D> levelCards = new List<CardData2D>();
     private List<GameObject> cardObjects = new List<GameObject>();
-    private List<GameObject> layerMaskObjects = new List<GameObject>();
+
     private Vector3 lastMousePosition;
     
     // 输入节流变量
@@ -146,7 +143,6 @@ public class SheepLevelEditor2D : MonoBehaviour
     {
         Setup2DCamera();
         Create2DGrid();
-        CreateLayerMasks();
         SetupPlaceableAreaVisualizer();
         LoadLevel(currentLevelId);
         UpdateCardDisplay();
@@ -436,73 +432,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         }
     }
     
-    void CreateLayerMasks()
-    {
-        // 清除现有的层级遮罩
-        ClearLayerMasks();
-        
-        if (!showLayerMasks) return;
-        
-        // 为每个层级创建遮罩
-        for (int layer = 0; layer < totalLayers; layer++)
-        {
-            CreateLayerMask(layer);
-        }
-        
-        Debug.Log($"层级遮罩已创建: 总层数={totalLayers}");
-    }
-    
-    void CreateLayerMask(int layer)
-    {
-        GameObject maskObj = new GameObject($"LayerMask_{layer}");
-        maskObj.transform.position = new Vector3(0, layer * layerMaskHeight, -0.5f);
-        
-        // 创建遮罩精灵
-        SpriteRenderer maskRenderer = maskObj.AddComponent<SpriteRenderer>();
-        maskRenderer.sprite = CreateMaskSprite();
-        maskRenderer.color = layerMaskColor;
-        maskRenderer.sortingOrder = -2; // 在网格后面，但在背景前面
-        
-        // 设置遮罩大小覆盖整个可放置区域
-        Vector2 actualAreaSize = GetActualAreaSize();
-        maskObj.transform.localScale = new Vector3(actualAreaSize.x, actualAreaSize.y, 1);
-        
-        layerMaskObjects.Add(maskObj);
-    }
-    
-    Sprite CreateMaskSprite()
-    {
-        // 创建简单的遮罩纹理
-        int textureSize = 32;
-        Texture2D texture = new Texture2D(textureSize, textureSize);
-        
-        Color maskColor = Color.white;
-        
-        for (int x = 0; x < textureSize; x++)
-        {
-            for (int y = 0; y < textureSize; y++)
-            {
-                texture.SetPixel(x, y, maskColor);
-            }
-        }
-        
-        texture.Apply();
-        return Sprite.Create(texture, new Rect(0, 0, textureSize, textureSize), new Vector2(0.5f, 0.5f));
-    }
-    
-    void ClearLayerMasks()
-    {
-        foreach (GameObject maskObj in layerMaskObjects)
-        {
-            if (maskObj != null)
-            {
-                DestroyImmediate(maskObj);
-            }
-        }
-        layerMaskObjects.Clear();
-        
-        Debug.Log("层级遮罩已清除");
-    }
+
     
     void SetupPlaceableAreaVisualizer()
     {
@@ -522,44 +452,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         }
     }
     
-    void UpdateLayerMasks()
-    {
-        // 更新层级遮罩的显示状态
-        for (int i = 0; i < layerMaskObjects.Count; i++)
-        {
-            if (layerMaskObjects[i] != null)
-            {
-                SpriteRenderer maskRenderer = layerMaskObjects[i].GetComponent<SpriteRenderer>();
-                if (maskRenderer != null)
-                {
-                    // 当前编辑层级不显示遮罩，其他层级显示遮罩
-                    bool shouldShow = showLayerMasks && i != selectedLayer;
-                    maskRenderer.enabled = shouldShow;
-                    
-                    // 更新遮罩颜色（包括透明度）
-                    maskRenderer.color = layerMaskColor;
-                }
-            }
-        }
-        
-        Debug.Log($"层级遮罩已更新: 显示={showLayerMasks}, 当前层级={selectedLayer}, 遮罩数量={layerMaskObjects.Count}");
-    }
-    
-    void UpdateLayerMaskSizes()
-    {
-        // 更新所有层级遮罩的大小以匹配可放置区域
-        Vector2 actualAreaSize = GetActualAreaSize();
-        
-        foreach (GameObject maskObj in layerMaskObjects)
-        {
-            if (maskObj != null)
-            {
-                maskObj.transform.localScale = new Vector3(actualAreaSize.x, actualAreaSize.y, 1);
-            }
-        }
-        
-        Debug.Log($"层级遮罩大小已更新: {actualAreaSize.x} x {actualAreaSize.y}");
-    }
+
     
     public void UpdateGridAndMasks()
     {
@@ -572,9 +465,6 @@ public class SheepLevelEditor2D : MonoBehaviour
             gridBackground.transform.localScale = new Vector3(actualAreaSize.x, actualAreaSize.y, 1);
         }
         
-        // 更新层级遮罩大小
-        UpdateLayerMaskSizes();
-        
         // 更新可放置区域可视化
         if (placeableAreaVisualizer != null)
         {
@@ -584,7 +474,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         // 更新网格显示
         UpdateGridDisplay();
         
-        Debug.Log($"网格和遮罩已更新: 网格大小={gridSize}, 间距={cardSpacing}, 区域大小={actualAreaSize.x} x {actualAreaSize.y}");
+        Debug.Log($"网格已更新: 网格大小={gridSize}, 间距={cardSpacing}, 区域大小={actualAreaSize.x} x {actualAreaSize.y}");
     }
     
     void Update()
@@ -641,7 +531,6 @@ public class SheepLevelEditor2D : MonoBehaviour
             if (oldLayer != selectedLayer)
             {
                 UpdateCardDisplay();
-                UpdateLayerMasks();
                 UpdateCardLabels();
                 lastInputTime = Time.time;
             }
@@ -983,8 +872,7 @@ public class SheepLevelEditor2D : MonoBehaviour
             }
         }
         
-        // 更新层级遮罩
-        UpdateLayerMasks();
+
         
         // 更新卡片标签
         UpdateCardLabels();
@@ -1028,8 +916,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         // 更新网格以适应新的卡片大小
         UpdateGridForCardSize();
         
-        // 更新层级遮罩大小以匹配网格
-        UpdateLayerMaskSizes();
+
         
         // 更新卡片标签
         UpdateCardLabels();
@@ -1281,7 +1168,6 @@ public class SheepLevelEditor2D : MonoBehaviour
         if (newTotalLayers != totalLayers)
         {
             totalLayers = newTotalLayers;
-            CreateLayerMasks();
             UpdateGridDisplay();
             Debug.Log($"总层数已更新: {totalLayers}");
         }
@@ -1291,7 +1177,6 @@ public class SheepLevelEditor2D : MonoBehaviour
         {
             selectedLayer = newSelectedLayer;
             UpdateCardDisplay();
-            UpdateLayerMasks(); // 更新层级遮罩显示
             UpdateCardLabels(); // 更新卡片标签
             Debug.Log($"GUI层级已切换到: {selectedLayer}");
         }
@@ -1375,40 +1260,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         
         GUILayout.Space(10);
         
-        // 层级遮罩设置
-        GUILayout.Label("层级遮罩设置");
-        bool newShowLayerMasks = GUILayout.Toggle(showLayerMasks, "显示层级遮罩");
-        if (newShowLayerMasks != showLayerMasks)
-        {
-            showLayerMasks = newShowLayerMasks;
-            
-            if (showLayerMasks)
-            {
-                // 如果开启遮罩，重新创建所有遮罩
-                CreateLayerMasks();
-            }
-            else
-            {
-                // 如果关闭遮罩，清除所有遮罩
-                ClearLayerMasks();
-            }
-            
-            UpdateGridDisplay(); // 更新网格显示
-            Debug.Log($"层级遮罩设置已更改: {(showLayerMasks ? "显示" : "隐藏")}");
-        }
-        
-        if (showLayerMasks)
-        {
-            GUILayout.Label("遮罩透明度");
-            float newAlpha = GUILayout.HorizontalSlider(layerMaskColor.a, 0f, 1f);
-            if (newAlpha != layerMaskColor.a)
-            {
-                layerMaskColor.a = newAlpha;
-                UpdateLayerMasks();
-                UpdateGridDisplay(); // 更新网格显示
-            }
-            GUILayout.Label($"透明度: {newAlpha:F2}");
-        }
+
         
         GUILayout.Space(10);
         

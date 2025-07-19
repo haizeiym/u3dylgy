@@ -47,8 +47,7 @@ public class AreaSizeUnifiedTest : MonoBehaviour
         // 测试2: 检查网格背景大小
         TestGridBackgroundSize();
         
-        // 测试3: 检查层级遮罩大小
-        TestLayerMaskSizes();
+
         
         // 测试4: 检查可放置区域大小
         TestPlaceableAreaSize();
@@ -110,44 +109,7 @@ public class AreaSizeUnifiedTest : MonoBehaviour
         }
     }
     
-    void TestLayerMaskSizes()
-    {
-        if (levelEditor != null)
-        {
-            Vector2 expectedSize = levelEditor.GetActualAreaSize();
-            bool allMasksCorrect = true;
-            
-            // 查找所有层级遮罩对象
-            GameObject[] layerMasks = GameObject.FindGameObjectsWithTag("LayerMask");
-            if (layerMasks.Length == 0)
-            {
-                // 如果没有标签，尝试通过名称查找
-                layerMasks = GameObject.FindObjectsOfType<GameObject>()
-                    .Where(obj => obj.name.StartsWith("LayerMask_"))
-                    .ToArray();
-            }
-            
-            Debug.Log($"找到 {layerMasks.Length} 个层级遮罩对象");
-            
-            foreach (GameObject mask in layerMasks)
-            {
-                Vector3 maskScale = mask.transform.localScale;
-                float widthDiff = Mathf.Abs(maskScale.x - expectedSize.x);
-                float heightDiff = Mathf.Abs(maskScale.y - expectedSize.y);
-                
-                if (widthDiff > 0.01f || heightDiff > 0.01f)
-                {
-                    Debug.LogWarning($"⚠ 层级遮罩 {mask.name} 大小不匹配: {maskScale.x:F2} x {maskScale.y:F2}");
-                    allMasksCorrect = false;
-                }
-            }
-            
-            if (allMasksCorrect)
-            {
-                Debug.Log("✓ 所有层级遮罩大小正确");
-            }
-        }
-    }
+
     
     void TestPlaceableAreaSize()
     {

@@ -247,7 +247,6 @@ public class SheepLevelEditor2DMenu
         editor.cameraZoom = 5f;
         
         // 显示设置
-        editor.showLayerMasks = true;
         editor.showPlaceableArea = true;
         editor.useCustomAreaSize = false;
         editor.areaSize = new Vector2(8.4f, 8.4f);
