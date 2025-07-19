@@ -104,21 +104,24 @@ public class PlaceableAreaVisualizer : MonoBehaviour
         
         Vector2 actualAreaSize = GetActualAreaSize();
         
+        // 计算网格的起始位置（左下角）
+        Vector2 gridStart = new Vector2(-actualAreaSize.x * 0.5f, -actualAreaSize.y * 0.5f);
+        
         // 创建水平线
         for (int y = 0; y <= levelEditor.gridSize.y; y++)
         {
-            float yPos = y * levelEditor.cardSpacing - levelEditor.cardSpacing * 0.5f;
-            CreateGridLine(new Vector2(-actualAreaSize.x * 0.5f, yPos),
-                          new Vector2(actualAreaSize.x * 0.5f, yPos),
+            float yPos = gridStart.y + y * levelEditor.cardSpacing;
+            CreateGridLine(new Vector2(gridStart.x, yPos),
+                          new Vector2(gridStart.x + actualAreaSize.x, yPos),
                           true);
         }
         
         // 创建垂直线
         for (int x = 0; x <= levelEditor.gridSize.x; x++)
         {
-            float xPos = x * levelEditor.cardSpacing - levelEditor.cardSpacing * 0.5f;
-            CreateGridLine(new Vector2(xPos, -actualAreaSize.y * 0.5f),
-                          new Vector2(xPos, actualAreaSize.y * 0.5f),
+            float xPos = gridStart.x + x * levelEditor.cardSpacing;
+            CreateGridLine(new Vector2(xPos, gridStart.y),
+                          new Vector2(xPos, gridStart.y + actualAreaSize.y),
                           false);
         }
     }

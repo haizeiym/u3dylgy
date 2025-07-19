@@ -271,9 +271,6 @@ MonoBehaviour:
   editorCamera2D: {fileID: 489573530}
   cameraZoom: 5
   cameraPosition: {x: 0, y: 0}
-  showLayerMasks: 1
-  layerMaskColor: {r: 0.754717, g: 0.11747954, b: 0.11747954, a: 0.3}
-  layerMaskHeight: 0.1
   showPlaceableArea: 1
   placeableAreaVisualizer: {fileID: 1378395891}
   areaSize: {x: 8.4, y: 8.4}
@@ -507,12 +504,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showPlaceableArea: 1
-  placeableAreaColor: {r: 0.2, g: 0.8, b: 0.2, a: 0.3}
-  borderColor: {r: 0.2, g: 0.8, b: 0.2, a: 0.8}
+  placeableAreaColor: {r: 0.8, g: 0.2, b: 0.6734166, a: 0.3}
+  borderColor: {r: 0.2, g: 0.229492, b: 0.8, a: 0.8}
   borderWidth: 0.05
   areaHeight: 0.05
   showGridLines: 1
-  gridLineColor: {r: 0.3, g: 0.7, b: 0.3, a: 0.5}
+  gridLineColor: {r: 0.4230823, g: 0.69803923, b: 0.29803923, a: 0.5}
   gridLineWidth: 0.02
 --- !u!4 &1378395892
 Transform:

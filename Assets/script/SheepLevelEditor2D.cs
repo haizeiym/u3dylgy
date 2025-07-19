@@ -89,8 +89,8 @@ public class SheepLevelEditor2D : MonoBehaviour
     public PlaceableAreaVisualizer placeableAreaVisualizer;
     
     [Header("区域大小设置")]
-    public Vector2 areaSize = new Vector2(8.4f, 8.4f); // 可设置的区域大小
-    public bool useCustomAreaSize = false; // 是否使用自定义区域大小
+    public Vector2 areaSize = new Vector2(16f, 16f); // 可设置的区域大小
+    public bool useCustomAreaSize = true; // 是否使用自定义区域大小
     
     [Header("层级预览设置")]
     public bool enableLayerPreview = true; // 是否启用层级预览
@@ -135,7 +135,8 @@ public class SheepLevelEditor2D : MonoBehaviour
         else
         {
             // 使用网格大小和卡片间距计算
-            return new Vector2((gridSize.x - 1) * cardSpacing, (gridSize.y - 1) * cardSpacing);
+            // 网格大小表示网格点的数量，所以区域大小应该是 gridSize * cardSpacing
+            return new Vector2(gridSize.x * cardSpacing, gridSize.y * cardSpacing);
         }
     }
     
@@ -283,14 +284,14 @@ public class SheepLevelEditor2D : MonoBehaviour
         int gridWidth = Mathf.RoundToInt(gridSize.x);
         int gridHeight = Mathf.RoundToInt(gridSize.y);
         
+        // 计算网格的起始位置（左下角）
+        Vector2 gridStart = new Vector2(-actualAreaSize.x * 0.5f, -actualAreaSize.y * 0.5f);
+        
         for (int x = 0; x < gridWidth; x++)
         {
             for (int y = 0; y < gridHeight; y++)
             {
-                Vector2 worldPos = new Vector2(
-                    (x - gridWidth * 0.5f) * cardSpacing,
-                    (y - gridHeight * 0.5f) * cardSpacing
-                );
+                Vector2 worldPos = gridStart + new Vector2(x * cardSpacing, y * cardSpacing);
                 
                 GameObject labelObj = new GameObject($"GridLabel_{x}_{y}");
                 labelObj.transform.position = new Vector3(worldPos.x, worldPos.y, -0.1f);
@@ -687,11 +688,21 @@ public class SheepLevelEditor2D : MonoBehaviour
         }
     }
     
-    Vector2 SnapToGrid2D(Vector2 worldPos)
+    public Vector2 SnapToGrid2D(Vector2 worldPos)
     {
-        float x = Mathf.Round(worldPos.x / cardSpacing) * cardSpacing;
-        float y = Mathf.Round(worldPos.y / cardSpacing) * cardSpacing;
-        return new Vector2(x, y);
+        // 计算网格的起始位置（左下角）
+        Vector2 actualAreaSize = GetActualAreaSize();
+        Vector2 gridStart = new Vector2(-actualAreaSize.x * 0.5f, -actualAreaSize.y * 0.5f);
+        
+        // 将世界坐标转换为网格坐标
+        Vector2 gridPos = worldPos - gridStart;
+        
+        // 对齐到网格
+        float gridX = Mathf.Round(gridPos.x / cardSpacing) * cardSpacing;
+        float gridY = Mathf.Round(gridPos.y / cardSpacing) * cardSpacing;
+        
+        // 转换回世界坐标
+        return gridStart + new Vector2(gridX, gridY);
     }
     
     public bool IsPositionOccupied2D(Vector2 position)
@@ -1088,8 +1099,8 @@ public class SheepLevelEditor2D : MonoBehaviour
         currentLevelName = $"Level2D_{currentLevelId}";
         
         // 重置区域大小设置
-        useCustomAreaSize = false;
-        areaSize = new Vector2(8.4f, 8.4f);
+        useCustomAreaSize = true;
+        areaSize = new Vector2(16f, 16f);
         
         // 重置层级预览设置
         enableLayerPreview = true;
