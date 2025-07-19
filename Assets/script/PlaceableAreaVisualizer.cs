@@ -14,6 +14,9 @@ public class PlaceableAreaVisualizer : MonoBehaviour
     public Color gridLineColor = new Color(0.3f, 0.7f, 0.3f, 0.5f);
     public float gridLineWidth = 0.02f;
     
+    [Header("纹理设置")]
+    public int textureSize = 128; // 纹理大小，影响区域和边框的可视化质量
+    
     private GameObject placeableAreaObject;
     private GameObject borderObject;
     private GameObject gridLinesObject;
@@ -146,7 +149,6 @@ public class PlaceableAreaVisualizer : MonoBehaviour
     
     Sprite CreateAreaSprite()
     {
-        int textureSize = 64;
         Texture2D texture = new Texture2D(textureSize, textureSize);
         
         Color areaColor = Color.white;
@@ -165,7 +167,6 @@ public class PlaceableAreaVisualizer : MonoBehaviour
     
     Sprite CreateBorderSprite()
     {
-        int textureSize = 64;
         Texture2D texture = new Texture2D(textureSize, textureSize);
         
         Color borderColor = Color.white;
@@ -193,7 +194,6 @@ public class PlaceableAreaVisualizer : MonoBehaviour
     
     Sprite CreateLineSprite()
     {
-        int textureSize = 16;
         Texture2D texture = new Texture2D(textureSize, textureSize);
         
         Color lineColor = Color.white;

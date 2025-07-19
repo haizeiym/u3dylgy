@@ -8,6 +8,9 @@ public class GUIEventTest : MonoBehaviour
     public bool showGUIBounds = true;
     public bool enableDebugLogs = true;
     
+    [Header("纹理设置")]
+    public int textureSize = 128; // 纹理大小，影响GUI边界可视化的质量
+    
     private SheepLevelEditor2D editor2D;
     private float lastTestTime;
     private Vector2 lastMousePosition;
@@ -117,7 +120,6 @@ public class GUIEventTest : MonoBehaviour
     Sprite CreateGUIBoundsSprite()
     {
         // 创建GUI边界精灵
-        int textureSize = 64;
         Texture2D texture = new Texture2D(textureSize, textureSize);
         
         // 创建边框效果

@@ -97,6 +97,9 @@ public class SheepLevelEditor2D : MonoBehaviour
     public Color normalLayerColor = Color.white; // 正常层级颜色
     public Color grayedLayerColor = new Color(0.5f, 0.5f, 0.5f, 0.5f); // 置灰层级颜色
     
+    [Header("纹理设置")]
+    public int textureSize = 128; // 纹理大小，影响网格和区域的可视化质量
+    
     [Header("高级设置")]
     public bool debugMode = false; // 调试模式
     public bool highPerformance = true; // 高性能模式
@@ -205,7 +208,6 @@ public class SheepLevelEditor2D : MonoBehaviour
     public Sprite CreateGridSprite()
     {
         // 创建动态网格纹理，根据卡片间距调整网格密度
-        int textureSize = 128; // 增加纹理大小以获得更好的分辨率
         Texture2D texture = new Texture2D(textureSize, textureSize);
         
         Color gridColor = Color.gray;
@@ -822,7 +824,6 @@ public class SheepLevelEditor2D : MonoBehaviour
     Sprite CreateDefaultCardSprite(int cardType)
     {
         // 创建简单的彩色方块精灵
-        int textureSize = 32;
         Texture2D texture = new Texture2D(textureSize, textureSize);
         
         Color[] colors = {
