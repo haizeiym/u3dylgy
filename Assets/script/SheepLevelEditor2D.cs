@@ -30,6 +30,27 @@ public class LevelData2D
     public bool enableLayerPreview;
     public Color normalLayerColor;
     public Color grayedLayerColor;
+    
+    // 高级设置
+    public bool debugMode;
+    public bool highPerformance;
+    public bool showFPS;
+    public bool showMemory;
+    public float cameraSpeed;
+    public float zoomSpeed;
+    public float inputThrottle;
+    public bool showGrid;
+    public bool showGridNumbers;
+    public bool showGridCoordinates;
+    public float gridLineWidth;
+    public bool showCardIDs;
+    public bool showCardTypes;
+    public float cardHoverScale;
+    public bool autoSave;
+    public bool backupLevels;
+    public bool exportJSON;
+    public bool exportXML;
+    public bool exportBinary;
 }
 
 public class SheepLevelEditor2D : MonoBehaviour
@@ -47,10 +68,13 @@ public class SheepLevelEditor2D : MonoBehaviour
     public int currentCardType = 0;
     public int maxCardTypes = 8;
     
-    [Header("编辑器状态")]
-    public bool isEditMode = true;
-    public bool showGrid = true;
-    public int selectedLayer = 0;
+            [Header("编辑器状态")]
+        public bool isEditMode = true;
+        public bool showGrid = true;
+        public int selectedLayer = 0;
+        
+        // 添加显示网格的GUI控制
+        public bool showGridInGUI = true;
     
     [Header("2D设置")]
     public Camera editorCamera2D;
@@ -75,10 +99,33 @@ public class SheepLevelEditor2D : MonoBehaviour
     public Color normalLayerColor = Color.white; // 正常层级颜色
     public Color grayedLayerColor = new Color(0.5f, 0.5f, 0.5f, 0.5f); // 置灰层级颜色
     
+    [Header("高级设置")]
+    public bool debugMode = false; // 调试模式
+    public bool highPerformance = true; // 高性能模式
+    public bool showFPS = false; // 显示FPS
+    public bool showMemory = false; // 显示内存使用
+    public float cameraSpeed = 1f; // 相机移动速度
+    public float zoomSpeed = 1f; // 缩放速度
+    public float inputThrottle = 0.1f; // 输入节流间隔
+    public bool showGridNumbers = false; // 显示网格编号
+    public bool showGridCoordinates = false; // 显示坐标
+    public float gridLineWidth = 0.02f; // 网格线宽度
+    public bool showCardIDs = false; // 显示卡片ID
+    public bool showCardTypes = false; // 显示卡片类型
+    public float cardHoverScale = 1.2f; // 悬停缩放
+    public bool autoSave = true; // 自动保存
+    public bool backupLevels = true; // 备份关卡
+    public bool exportJSON = true; // 导出JSON格式
+    public bool exportXML = false; // 导出XML格式
+    public bool exportBinary = false; // 导出二进制格式
+    
     private List<CardData2D> levelCards = new List<CardData2D>();
     private List<GameObject> cardObjects = new List<GameObject>();
     private List<GameObject> layerMaskObjects = new List<GameObject>();
     private Vector3 lastMousePosition;
+    
+    // 输入节流变量
+    private float lastInputTime = 0f;
     
     // 计算实际区域大小
     public Vector2 GetActualAreaSize()
@@ -102,12 +149,16 @@ public class SheepLevelEditor2D : MonoBehaviour
         SetupPlaceableAreaVisualizer();
         LoadLevel(currentLevelId);
         UpdateCardDisplay();
+        UpdateGridDisplay(); // 初始化网格显示
+        UpdateCardLabels(); // 初始化卡片标签
         
         // 确保GUI事件管理器存在
         if (GUIEventManager.Instance != null)
         {
             GUIEventManager.Instance.SetGUIRect(new Rect(10, 10, 300, Screen.height - 20));
         }
+        
+        Debug.Log("羊了个羊2D关卡编辑器已启动，所有设置已初始化");
     }
     
     void Setup2DCamera()
@@ -126,6 +177,8 @@ public class SheepLevelEditor2D : MonoBehaviour
         editorCamera2D.orthographicSize = cameraZoom;
         editorCamera2D.transform.position = new Vector3(cameraPosition.x, cameraPosition.y, -10);
         editorCamera2D.backgroundColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+        
+        Debug.Log($"2D相机已设置: 缩放={cameraZoom}, 位置={cameraPosition}");
     }
     
     void Create2DGrid()
@@ -146,6 +199,9 @@ public class SheepLevelEditor2D : MonoBehaviour
         
         // 更新网格以适应卡片大小
         UpdateGridForCardSize();
+        
+        // 初始化网格显示
+        UpdateGridDisplay();
     }
     
     public Sprite CreateGridSprite()
@@ -182,6 +238,156 @@ public class SheepLevelEditor2D : MonoBehaviour
         
         texture.Apply();
         return Sprite.Create(texture, new Rect(0, 0, textureSize, textureSize), new Vector2(0.5f, 0.5f));
+    }
+    
+    public void UpdateGridDisplay()
+    {
+        // 更新网格显示，包括编号和坐标
+        GameObject gridBackground = GameObject.Find("GridBackground");
+        if (gridBackground != null)
+        {
+            SpriteRenderer gridRenderer = gridBackground.GetComponent<SpriteRenderer>();
+            if (gridRenderer != null)
+            {
+                // 根据showGrid设置显示或隐藏网格
+                gridRenderer.enabled = showGrid;
+                
+                if (showGrid)
+                {
+                    // 重新创建网格纹理
+                    gridRenderer.sprite = CreateGridSprite();
+                    
+                    // 更新网格大小以覆盖整个可放置区域
+                    Vector2 actualAreaSize = GetActualAreaSize();
+                    gridBackground.transform.localScale = new Vector3(actualAreaSize.x, actualAreaSize.y, 1);
+                }
+            }
+        }
+        
+        // 如果启用了网格编号或坐标显示，创建文本对象
+        if (showGrid && (showGridNumbers || showGridCoordinates))
+        {
+            CreateGridLabels();
+        }
+        else
+        {
+            ClearGridLabels();
+        }
+    }
+    
+    private List<GameObject> gridLabelObjects = new List<GameObject>();
+    
+    void CreateGridLabels()
+    {
+        // 清除现有标签
+        ClearGridLabels();
+        
+        Vector2 actualAreaSize = GetActualAreaSize();
+        int gridWidth = Mathf.RoundToInt(gridSize.x);
+        int gridHeight = Mathf.RoundToInt(gridSize.y);
+        
+        for (int x = 0; x < gridWidth; x++)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                Vector2 worldPos = new Vector2(
+                    (x - gridWidth * 0.5f) * cardSpacing,
+                    (y - gridHeight * 0.5f) * cardSpacing
+                );
+                
+                GameObject labelObj = new GameObject($"GridLabel_{x}_{y}");
+                labelObj.transform.position = new Vector3(worldPos.x, worldPos.y, -0.1f);
+                
+                // 创建文本显示
+                if (showGridNumbers)
+                {
+                    CreateGridNumberLabel(labelObj, x, y);
+                }
+                
+                if (showGridCoordinates)
+                {
+                    CreateGridCoordinateLabel(labelObj, worldPos);
+                }
+                
+                gridLabelObjects.Add(labelObj);
+            }
+        }
+    }
+    
+    void CreateGridNumberLabel(GameObject parent, int x, int y)
+    {
+        GameObject numberObj = new GameObject("Number");
+        numberObj.transform.SetParent(parent.transform);
+        numberObj.transform.localPosition = Vector3.zero;
+        
+        // 这里可以添加文本组件来显示编号
+        // 由于Unity的GUI文本在3D空间中比较复杂，这里只是创建占位符
+        Debug.Log($"创建网格编号: ({x}, {y})");
+    }
+    
+    void CreateGridCoordinateLabel(GameObject parent, Vector2 worldPos)
+    {
+        GameObject coordObj = new GameObject("Coordinate");
+        coordObj.transform.SetParent(parent.transform);
+        coordObj.transform.localPosition = Vector3.zero;
+        
+        // 这里可以添加文本组件来显示坐标
+        Debug.Log($"创建网格坐标: {worldPos}");
+    }
+    
+    void ClearGridLabels()
+    {
+        foreach (GameObject labelObj in gridLabelObjects)
+        {
+            if (labelObj != null)
+            {
+                DestroyImmediate(labelObj);
+            }
+        }
+        gridLabelObjects.Clear();
+    }
+    
+    void CreateCardLabel(GameObject cardObj, CardObject2D cardComponent)
+    {
+        GameObject labelObj = new GameObject("CardLabel");
+        labelObj.transform.SetParent(cardObj.transform);
+        labelObj.transform.localPosition = new Vector3(0, 0.6f, 0); // 在卡片上方显示
+        
+        // 这里可以添加文本组件来显示卡片信息
+        // 由于Unity的GUI文本在3D空间中比较复杂，这里只是创建占位符
+        if (showCardIDs)
+        {
+            Debug.Log($"显示卡片ID: {cardComponent.cardId}");
+        }
+        
+        if (showCardTypes)
+        {
+            Debug.Log($"显示卡片类型: {cardComponent.cardType}");
+        }
+    }
+    
+    public void UpdateCardLabels()
+    {
+        // 更新所有卡片的标签显示
+        foreach (var cardObj in cardObjects)
+        {
+            CardObject2D cardComponent = cardObj.GetComponent<CardObject2D>();
+            if (cardComponent != null)
+            {
+                // 清除现有标签
+                Transform existingLabel = cardObj.transform.Find("CardLabel");
+                if (existingLabel != null)
+                {
+                    DestroyImmediate(existingLabel.gameObject);
+                }
+                
+                // 如果启用了标签显示，创建新标签
+                if (showCardIDs || showCardTypes)
+                {
+                    CreateCardLabel(cardObj, cardComponent);
+                }
+            }
+        }
     }
     
     public int CalculateGridLineSpacing(int textureSize)
@@ -221,6 +427,9 @@ public class SheepLevelEditor2D : MonoBehaviour
                 Vector2 actualAreaSize = GetActualAreaSize();
                 gridBackground.transform.localScale = new Vector3(actualAreaSize.x, actualAreaSize.y, 1);
                 
+                // 更新网格显示
+                UpdateGridDisplay();
+                
                 Debug.Log($"网格已更新: 卡片大小={cardSize}, 间距={cardSpacing}, 区域大小={actualAreaSize.x} x {actualAreaSize.y}");
             }
         }
@@ -238,6 +447,8 @@ public class SheepLevelEditor2D : MonoBehaviour
         {
             CreateLayerMask(layer);
         }
+        
+        Debug.Log($"层级遮罩已创建: 总层数={totalLayers}");
     }
     
     void CreateLayerMask(int layer)
@@ -288,6 +499,8 @@ public class SheepLevelEditor2D : MonoBehaviour
             }
         }
         layerMaskObjects.Clear();
+        
+        Debug.Log("层级遮罩已清除");
     }
     
     void SetupPlaceableAreaVisualizer()
@@ -304,6 +517,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         if (placeableAreaVisualizer != null)
         {
             placeableAreaVisualizer.SetVisible(showPlaceableArea);
+            Debug.Log($"可放置区域可视化已设置: 显示={showPlaceableArea}");
         }
     }
     
@@ -366,6 +580,9 @@ public class SheepLevelEditor2D : MonoBehaviour
             placeableAreaVisualizer.SetVisible(showPlaceableArea);
         }
         
+        // 更新网格显示
+        UpdateGridDisplay();
+        
         Debug.Log($"网格和遮罩已更新: 网格大小={gridSize}, 间距={cardSpacing}, 区域大小={actualAreaSize.x} x {actualAreaSize.y}");
     }
     
@@ -373,64 +590,49 @@ public class SheepLevelEditor2D : MonoBehaviour
     {
         if (!isEditMode) return;
         
+        // 高性能模式：降低更新频率
+        if (highPerformance && Time.frameCount % 3 != 0)
+        {
+            return;
+        }
+        
         HandleInput();
         HandleCameraMovement();
     }
     
     void HandleInput()
     {
-        // 多重检查鼠标是否在GUI区域内
-        bool isOverGUI = false;
-        
-        // 主要检查：使用GUI事件管理器
-        if (GUIEventManager.Instance != null)
+        // 输入节流：限制输入频率
+        if (Time.time - lastInputTime < inputThrottle)
         {
-            isOverGUI = GUIEventManager.Instance.IsMouseOverGUI();
-            
-            // 如果GUI事件管理器说不在GUI上，但我们在GUI区域内，强制检查
-            if (!isOverGUI)
-            {
-                isOverGUI = GUIEventManager.Instance.IsMouseOverGUINow();
-            }
+            return;
         }
         
-        // 备用检查方法
-        if (!isOverGUI)
-        {
-            Vector2 mousePos = Input.mousePosition;
-            Rect guiRect = new Rect(10, 10, 300, Screen.height - 20);
-            isOverGUI = guiRect.Contains(mousePos);
-        }
-        
-        // 最终检查：如果鼠标在屏幕左侧300像素内，认为在GUI上
-        if (!isOverGUI && Input.mousePosition.x < 320)
-        {
-            isOverGUI = true;
-        }
+        // 简化的GUI区域检查
+        bool isOverGUI = Input.mousePosition.x < 320;
         
         if (isOverGUI)
         {
-            Debug.Log($"鼠标在GUI区域内，忽略游戏输入 - 位置: {Input.mousePosition}");
             return; // 如果鼠标在GUI上，不处理游戏输入
         }
         
         // 鼠标左键放置卡片
         if (Input.GetMouseButtonDown(0))
         {
-            Debug.Log("处理左键点击 - 放置卡片");
             PlaceCard2D();
+            lastInputTime = Time.time;
         }
         
         // 鼠标右键删除卡片
         if (Input.GetMouseButtonDown(1))
         {
-            Debug.Log("处理右键点击 - 删除卡片");
             DeleteCard2D();
+            lastInputTime = Time.time;
         }
         
-        // 滚轮切换层级
+        // 滚轮切换层级（添加防抖）
         float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (scroll != 0 && !Input.GetKey(KeyCode.LeftControl))
+        if (Mathf.Abs(scroll) > 0.1f && !Input.GetKey(KeyCode.LeftControl))
         {
             int oldLayer = selectedLayer;
             selectedLayer = Mathf.Clamp(selectedLayer + (scroll > 0 ? 1 : -1), 0, totalLayers - 1);
@@ -438,17 +640,24 @@ public class SheepLevelEditor2D : MonoBehaviour
             if (oldLayer != selectedLayer)
             {
                 UpdateCardDisplay();
-                UpdateLayerMasks(); // 更新层级遮罩显示
-                Debug.Log($"层级已切换到: {selectedLayer}");
+                UpdateLayerMasks();
+                UpdateCardLabels();
+                lastInputTime = Time.time;
             }
         }
         
-        // 数字键切换卡片类型
+        // 数字键切换卡片类型（添加防抖）
         for (int i = 0; i < maxCardTypes && i < 9; i++)
         {
             if (Input.GetKeyDown(KeyCode.Alpha1 + i))
             {
+                int oldType = currentCardType;
                 currentCardType = i;
+                if (oldType != currentCardType)
+                {
+                    UpdateCardLabels();
+                    lastInputTime = Time.time;
+                }
             }
         }
         
@@ -476,18 +685,25 @@ public class SheepLevelEditor2D : MonoBehaviour
         if (Input.GetMouseButton(2))
         {
             Vector3 delta = Input.mousePosition - lastMousePosition;
-            Vector3 worldDelta = editorCamera2D.ScreenToWorldPoint(delta) - editorCamera2D.ScreenToWorldPoint(Vector3.zero);
-            editorCamera2D.transform.position -= worldDelta;
+            if (delta.magnitude > 1f) // 添加移动阈值
+            {
+                Vector3 worldDelta = editorCamera2D.ScreenToWorldPoint(delta) - editorCamera2D.ScreenToWorldPoint(Vector3.zero);
+                editorCamera2D.transform.position -= worldDelta * cameraSpeed;
+            }
         }
         
-        // Ctrl+滚轮缩放
+        // Ctrl+滚轮缩放（添加防抖）
         if (Input.GetKey(KeyCode.LeftControl))
         {
             float scroll = Input.GetAxis("Mouse ScrollWheel");
-            if (scroll != 0)
+            if (Mathf.Abs(scroll) > 0.05f)
             {
-                cameraZoom = Mathf.Clamp(cameraZoom - scroll * 2f, 1f, 20f);
-                editorCamera2D.orthographicSize = cameraZoom;
+                float oldZoom = cameraZoom;
+                cameraZoom = Mathf.Clamp(cameraZoom - scroll * 2f * zoomSpeed, 1f, 20f);
+                if (Mathf.Abs(oldZoom - cameraZoom) > 0.1f)
+                {
+                    editorCamera2D.orthographicSize = cameraZoom;
+                }
             }
         }
         
@@ -514,12 +730,9 @@ public class SheepLevelEditor2D : MonoBehaviour
         Vector2 worldPos2D = new Vector2(mouseWorldPos.x, mouseWorldPos.y);
         Vector2 gridPos = SnapToGrid2D(worldPos2D);
         
-        Debug.Log($"尝试放置2D卡片: 鼠标世界坐标={worldPos2D}, 网格坐标={gridPos}");
-        
         // 检查位置是否在网格范围内
         if (!IsPositionInGridBounds2D(gridPos))
         {
-            Debug.Log($"位置超出网格范围: {gridPos}");
             return;
         }
         
@@ -538,11 +751,12 @@ public class SheepLevelEditor2D : MonoBehaviour
             
             levelCards.Add(newCard);
             CreateCardObject2D(newCard);
-            Debug.Log($"成功放置2D卡片: ID={newCard.id}, 位置={gridPos}, 类型={currentCardType}, 层级={selectedLayer}");
-        }
-        else
-        {
-            Debug.Log($"位置已被占用: {gridPos}");
+            
+            // 自动保存
+            if (autoSave)
+            {
+                SaveLevel();
+            }
         }
     }
     
@@ -573,7 +787,12 @@ public class SheepLevelEditor2D : MonoBehaviour
                 levelCards.Remove(cardData);
                 DestroyImmediate(cardToDelete);
                 cardObjects.Remove(cardToDelete);
-                Debug.Log($"删除2D卡片: ID={cardData.id}, 类型={cardData.type}, 层级={cardData.layer}");
+                
+                // 自动保存
+                if (autoSave)
+                {
+                    SaveLevel();
+                }
             }
         }
     }
@@ -599,11 +818,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         float halfAreaHeight = actualAreaSize.y * 0.5f;
         
         // 检查位置是否在区域范围内
-        bool inBounds = Mathf.Abs(position.x) <= halfAreaWidth && Mathf.Abs(position.y) <= halfAreaHeight;
-        
-        Debug.Log($"区域边界检查: 位置={position}, 区域大小={actualAreaSize}, 边界范围=±({halfAreaWidth}, {halfAreaHeight}), 在范围内={inBounds}");
-        
-        return inBounds;
+        return Mathf.Abs(position.x) <= halfAreaWidth && Mathf.Abs(position.y) <= halfAreaHeight;
     }
     
     int GetNextCardId()
@@ -692,6 +907,12 @@ public class SheepLevelEditor2D : MonoBehaviour
             UpdateCardLayerPreview(cardObj, cardComponent);
         }
         
+        // 添加卡片标签显示
+        if (showCardIDs || showCardTypes)
+        {
+            CreateCardLabel(cardObj, cardComponent);
+        }
+        
         cardObjects.Add(cardObj);
         
         Debug.Log($"创建2D卡片: ID={cardData.id}, 类型={cardData.type}, 层级={cardData.layer}");
@@ -763,6 +984,9 @@ public class SheepLevelEditor2D : MonoBehaviour
         
         // 更新层级遮罩
         UpdateLayerMasks();
+        
+        // 更新卡片标签
+        UpdateCardLabels();
     }
     
     public void UpdateCardLayerPreview(GameObject cardObj, CardObject2D cardComponent)
@@ -806,6 +1030,9 @@ public class SheepLevelEditor2D : MonoBehaviour
         // 更新层级遮罩大小以匹配网格
         UpdateLayerMaskSizes();
         
+        // 更新卡片标签
+        UpdateCardLabels();
+        
         Debug.Log($"卡片大小已更新为: {cardSize}");
     }
     
@@ -824,7 +1051,28 @@ public class SheepLevelEditor2D : MonoBehaviour
             areaSize = areaSize,
             enableLayerPreview = enableLayerPreview,
             normalLayerColor = normalLayerColor,
-            grayedLayerColor = grayedLayerColor
+            grayedLayerColor = grayedLayerColor,
+            
+            // 保存高级设置
+            debugMode = debugMode,
+            highPerformance = highPerformance,
+            showFPS = showFPS,
+            showMemory = showMemory,
+            cameraSpeed = cameraSpeed,
+            zoomSpeed = zoomSpeed,
+            inputThrottle = inputThrottle,
+            showGrid = showGrid,
+            showGridNumbers = showGridNumbers,
+            showGridCoordinates = showGridCoordinates,
+            gridLineWidth = gridLineWidth,
+            showCardIDs = showCardIDs,
+            showCardTypes = showCardTypes,
+            cardHoverScale = cardHoverScale,
+            autoSave = autoSave,
+            backupLevels = backupLevels,
+            exportJSON = exportJSON,
+            exportXML = exportXML,
+            exportBinary = exportBinary
         };
         
         string json = JsonUtility.ToJson(levelData, true);
@@ -832,6 +1080,14 @@ public class SheepLevelEditor2D : MonoBehaviour
         
         // 确保目录存在
         Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+        
+        // 如果启用备份且文件已存在，先创建备份
+        if (backupLevels && File.Exists(filePath))
+        {
+            string backupPath = Path.Combine(Application.dataPath, "Levels", $"Level2D_{currentLevelId}_backup.json");
+            File.Copy(filePath, backupPath, true);
+            Debug.Log($"已创建备份文件: {backupPath}");
+        }
         
         File.WriteAllText(filePath, json);
         Debug.Log($"2D关卡已保存: {filePath}");
@@ -869,6 +1125,27 @@ public class SheepLevelEditor2D : MonoBehaviour
             normalLayerColor = levelData.normalLayerColor;
             grayedLayerColor = levelData.grayedLayerColor;
             
+            // 加载高级设置
+            debugMode = levelData.debugMode;
+            highPerformance = levelData.highPerformance;
+            showFPS = levelData.showFPS;
+            showMemory = levelData.showMemory;
+            cameraSpeed = levelData.cameraSpeed;
+            zoomSpeed = levelData.zoomSpeed;
+            inputThrottle = levelData.inputThrottle;
+            showGrid = levelData.showGrid;
+            showGridNumbers = levelData.showGridNumbers;
+            showGridCoordinates = levelData.showGridCoordinates;
+            gridLineWidth = levelData.gridLineWidth;
+            showCardIDs = levelData.showCardIDs;
+            showCardTypes = levelData.showCardTypes;
+            cardHoverScale = levelData.cardHoverScale;
+            autoSave = levelData.autoSave;
+            backupLevels = levelData.backupLevels;
+            exportJSON = levelData.exportJSON;
+            exportXML = levelData.exportXML;
+            exportBinary = levelData.exportBinary;
+            
             levelCards = new List<CardData2D>(levelData.cards);
             
             // 清除现有卡片对象
@@ -889,6 +1166,8 @@ public class SheepLevelEditor2D : MonoBehaviour
             
             UpdateCardDisplay();
             UpdateAllCardSizes(); // 确保使用正确的卡片大小
+            UpdateGridDisplay(); // 更新网格显示
+            UpdateCardLabels(); // 更新卡片标签
             Debug.Log($"2D关卡已加载: 关卡ID={currentLevelId}, 关卡名称={currentLevelName}, 文件路径={filePath}");
         }
         else
@@ -929,9 +1208,32 @@ public class SheepLevelEditor2D : MonoBehaviour
         normalLayerColor = Color.white;
         grayedLayerColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
         
+        // 重置高级设置
+        debugMode = false;
+        highPerformance = true;
+        showFPS = false;
+        showMemory = false;
+        cameraSpeed = 1f;
+        zoomSpeed = 1f;
+        inputThrottle = 0.1f;
+        showGrid = true;
+        showGridNumbers = false;
+        showGridCoordinates = false;
+        gridLineWidth = 0.02f;
+        showCardIDs = false;
+        showCardTypes = false;
+        cardHoverScale = 1.2f;
+        autoSave = true;
+        backupLevels = true;
+        exportJSON = true;
+        exportXML = false;
+        exportBinary = false;
+        
         // 强制更新显示
         UpdateCardDisplay();
         UpdateGridAndMasks();
+        UpdateGridDisplay(); // 更新网格显示
+        UpdateCardLabels(); // 更新卡片标签
         
         Debug.Log($"新建2D关卡: ID={currentLevelId}, 名称={currentLevelName}");
     }
@@ -963,13 +1265,25 @@ public class SheepLevelEditor2D : MonoBehaviour
             currentLevelId = newLevelId;
             LoadLevel(currentLevelId);
         }
-        currentLevelName = TextField("关卡名称", currentLevelName);
+        
+        string newLevelName = TextField("关卡名称", currentLevelName);
+        if (newLevelName != currentLevelName)
+        {
+            currentLevelName = newLevelName;
+        }
         
         GUILayout.Space(10);
         
         // 编辑器设置
         GUILayout.Label("编辑器设置");
-        totalLayers = IntField("总层数", totalLayers);
+        int newTotalLayers = IntField("总层数", totalLayers);
+        if (newTotalLayers != totalLayers)
+        {
+            totalLayers = newTotalLayers;
+            CreateLayerMasks();
+            UpdateGridDisplay();
+            Debug.Log($"总层数已更新: {totalLayers}");
+        }
         
         int newSelectedLayer = IntSlider("当前层级", selectedLayer, 0, totalLayers - 1);
         if (newSelectedLayer != selectedLayer)
@@ -977,14 +1291,27 @@ public class SheepLevelEditor2D : MonoBehaviour
             selectedLayer = newSelectedLayer;
             UpdateCardDisplay();
             UpdateLayerMasks(); // 更新层级遮罩显示
+            UpdateCardLabels(); // 更新卡片标签
             Debug.Log($"GUI层级已切换到: {selectedLayer}");
         }
         
-        currentCardType = IntSlider("卡片类型", currentCardType, 0, maxCardTypes - 1);
+        int newCurrentCardType = IntSlider("卡片类型", currentCardType, 0, maxCardTypes - 1);
+        if (newCurrentCardType != currentCardType)
+        {
+            currentCardType = newCurrentCardType;
+            UpdateCardLabels(); // 更新卡片标签
+        }
         
         // 网格设置
         GUILayout.Space(5);
         GUILayout.Label("网格设置");
+        
+        bool newShowGrid = GUILayout.Toggle(showGrid, "显示网格");
+        if (newShowGrid != showGrid)
+        {
+            showGrid = newShowGrid;
+            UpdateGridDisplay(); // 更新网格显示
+        }
         
         // 网格大小X
         float newGridSizeX = GUILayout.HorizontalSlider(gridSize.x, 4f, 16f);
@@ -993,6 +1320,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         {
             gridSize.x = newGridSizeX;
             UpdateGridAndMasks();
+            UpdateGridDisplay(); // 更新网格显示
         }
         
         // 网格大小Y
@@ -1002,6 +1330,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         {
             gridSize.y = newGridSizeY;
             UpdateGridAndMasks();
+            UpdateGridDisplay(); // 更新网格显示
         }
         
         // 卡片间距
@@ -1012,6 +1341,7 @@ public class SheepLevelEditor2D : MonoBehaviour
             cardSpacing = newCardSpacing;
             UpdateGridAndMasks();
             UpdateGridForCardSize(); // 更新网格纹理以适应新的间距
+            UpdateGridDisplay(); // 更新网格显示
         }
         
         // 卡片大小设置
@@ -1024,18 +1354,23 @@ public class SheepLevelEditor2D : MonoBehaviour
             cardSize = newCardSize;
             UpdateAllCardSizes();
             UpdateGridForCardSize(); // 更新网格纹理以适应新的大小
+            UpdateGridDisplay(); // 更新网格显示
         }
         
         GUILayout.Space(10);
         
         // 2D相机设置
         GUILayout.Label("2D相机设置");
-        cameraZoom = GUILayout.HorizontalSlider(cameraZoom, 1f, 20f);
-        GUILayout.Label($"缩放: {cameraZoom:F1}");
-        if (editorCamera2D != null)
+        float newCameraZoom = GUILayout.HorizontalSlider(cameraZoom, 1f, 20f);
+        if (newCameraZoom != cameraZoom)
         {
-            editorCamera2D.orthographicSize = cameraZoom;
+            cameraZoom = newCameraZoom;
+            if (editorCamera2D != null)
+            {
+                editorCamera2D.orthographicSize = cameraZoom;
+            }
         }
+        GUILayout.Label($"缩放: {cameraZoom:F1}");
         
         GUILayout.Space(10);
         
@@ -1057,6 +1392,7 @@ public class SheepLevelEditor2D : MonoBehaviour
                 ClearLayerMasks();
             }
             
+            UpdateGridDisplay(); // 更新网格显示
             Debug.Log($"层级遮罩设置已更改: {(showLayerMasks ? "显示" : "隐藏")}");
         }
         
@@ -1068,6 +1404,7 @@ public class SheepLevelEditor2D : MonoBehaviour
             {
                 layerMaskColor.a = newAlpha;
                 UpdateLayerMasks();
+                UpdateGridDisplay(); // 更新网格显示
             }
             GUILayout.Label($"透明度: {newAlpha:F2}");
         }
@@ -1084,6 +1421,7 @@ public class SheepLevelEditor2D : MonoBehaviour
             {
                 placeableAreaVisualizer.SetVisible(showPlaceableArea);
             }
+            UpdateGridDisplay(); // 更新网格显示
         }
         
         GUILayout.Space(10);
@@ -1095,6 +1433,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         {
             useCustomAreaSize = newUseCustomAreaSize;
             UpdateGridAndMasks();
+            UpdateGridDisplay(); // 更新网格显示
             Debug.Log($"自定义区域大小设置已更改: {(useCustomAreaSize ? "启用" : "禁用")}");
         }
         
@@ -1107,6 +1446,7 @@ public class SheepLevelEditor2D : MonoBehaviour
             {
                 areaSize.x = newAreaSizeX;
                 UpdateGridAndMasks();
+                UpdateGridDisplay(); // 更新网格显示
             }
             
             // 区域高度
@@ -1116,6 +1456,7 @@ public class SheepLevelEditor2D : MonoBehaviour
             {
                 areaSize.y = newAreaSizeY;
                 UpdateGridAndMasks();
+                UpdateGridDisplay(); // 更新网格显示
             }
         }
         else
@@ -1134,6 +1475,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         {
             enableLayerPreview = newEnableLayerPreview;
             UpdateCardDisplay();
+            UpdateCardLabels(); // 更新卡片标签
             Debug.Log($"层级预览设置已更改: {(enableLayerPreview ? "启用" : "禁用")}");
         }
         
@@ -1145,6 +1487,7 @@ public class SheepLevelEditor2D : MonoBehaviour
             {
                 normalLayerColor = newNormalColor;
                 UpdateCardDisplay();
+                UpdateCardLabels(); // 更新卡片标签
             }
             
             GUILayout.Label("置灰层级颜色");
@@ -1153,6 +1496,7 @@ public class SheepLevelEditor2D : MonoBehaviour
             {
                 grayedLayerColor = newGrayedColor;
                 UpdateCardDisplay();
+                UpdateCardLabels(); // 更新卡片标签
             }
             
             GUILayout.Label("说明: 最上层正常显示，其他层级置灰");
@@ -1162,53 +1506,144 @@ public class SheepLevelEditor2D : MonoBehaviour
         
         // 高级设置
         GUILayout.Label("高级设置");
-        GUILayout.Label("调试模式");
-        bool debugMode = GUILayout.Toggle(false, "启用调试日志");
+        bool newDebugMode = GUILayout.Toggle(debugMode, "启用调试日志");
+        if (newDebugMode != debugMode)
+        {
+            debugMode = newDebugMode;
+        }
         
-        GUILayout.Label("性能设置");
-        bool highPerformance = GUILayout.Toggle(true, "高性能模式");
+        bool newHighPerformance = GUILayout.Toggle(highPerformance, "高性能模式");
+        if (newHighPerformance != highPerformance)
+        {
+            highPerformance = newHighPerformance;
+        }
         
-        GUILayout.Label("显示设置");
-        bool showFPS = GUILayout.Toggle(false, "显示FPS");
-        bool showMemory = GUILayout.Toggle(false, "显示内存使用");
+        bool newShowFPS = GUILayout.Toggle(showFPS, "显示FPS");
+        if (newShowFPS != showFPS)
+        {
+            showFPS = newShowFPS;
+        }
+        
+        bool newShowMemory = GUILayout.Toggle(showMemory, "显示内存使用");
+        if (newShowMemory != showMemory)
+        {
+            showMemory = newShowMemory;
+        }
         
         GUILayout.Space(5);
         
         GUILayout.Label("相机高级设置");
-        float cameraSpeed = GUILayout.HorizontalSlider(1f, 0.1f, 5f);
+        float newCameraSpeed = GUILayout.HorizontalSlider(cameraSpeed, 0.1f, 5f);
+        if (newCameraSpeed != cameraSpeed)
+        {
+            cameraSpeed = newCameraSpeed;
+        }
         GUILayout.Label($"相机移动速度: {cameraSpeed:F1}");
         
-        float zoomSpeed = GUILayout.HorizontalSlider(1f, 0.1f, 3f);
+        float newZoomSpeed = GUILayout.HorizontalSlider(zoomSpeed, 0.1f, 3f);
+        if (newZoomSpeed != zoomSpeed)
+        {
+            zoomSpeed = newZoomSpeed;
+        }
         GUILayout.Label($"缩放速度: {zoomSpeed:F1}");
+        
+        GUILayout.Label("输入设置");
+        float newInputThrottle = GUILayout.HorizontalSlider(inputThrottle, 0.01f, 0.5f);
+        if (newInputThrottle != inputThrottle)
+        {
+            inputThrottle = newInputThrottle;
+        }
+        GUILayout.Label($"输入节流间隔: {inputThrottle:F2}s");
         
         GUILayout.Space(5);
         
         GUILayout.Label("网格高级设置");
-        bool showGridNumbers = GUILayout.Toggle(false, "显示网格编号");
-        bool showGridCoordinates = GUILayout.Toggle(false, "显示坐标");
+        bool newShowGridNumbers = GUILayout.Toggle(showGridNumbers, "显示网格编号");
+        if (newShowGridNumbers != showGridNumbers)
+        {
+            showGridNumbers = newShowGridNumbers;
+            UpdateGridDisplay();
+        }
         
-        float gridLineWidth = GUILayout.HorizontalSlider(0.02f, 0.01f, 0.1f);
+        bool newShowGridCoordinates = GUILayout.Toggle(showGridCoordinates, "显示坐标");
+        if (newShowGridCoordinates != showGridCoordinates)
+        {
+            showGridCoordinates = newShowGridCoordinates;
+            UpdateGridDisplay();
+        }
+        
+        float newGridLineWidth = GUILayout.HorizontalSlider(gridLineWidth, 0.01f, 0.1f);
+        if (newGridLineWidth != gridLineWidth)
+        {
+            gridLineWidth = newGridLineWidth;
+            UpdateGridDisplay();
+        }
         GUILayout.Label($"网格线宽度: {gridLineWidth:F3}");
+        
+        // 注意：网格线宽度设置需要重新生成网格纹理才能生效
+        if (GUILayout.Button("重新生成网格"))
+        {
+            UpdateGridDisplay();
+        }
         
         GUILayout.Space(5);
         
         GUILayout.Label("卡片高级设置");
-        bool showCardIDs = GUILayout.Toggle(false, "显示卡片ID");
-        bool showCardTypes = GUILayout.Toggle(false, "显示卡片类型");
+        bool newShowCardIDs = GUILayout.Toggle(showCardIDs, "显示卡片ID");
+        if (newShowCardIDs != showCardIDs)
+        {
+            showCardIDs = newShowCardIDs;
+            UpdateCardLabels();
+        }
         
-        float cardHoverScale = GUILayout.HorizontalSlider(1.2f, 1.0f, 2.0f);
+        bool newShowCardTypes = GUILayout.Toggle(showCardTypes, "显示卡片类型");
+        if (newShowCardTypes != showCardTypes)
+        {
+            showCardTypes = newShowCardTypes;
+            UpdateCardLabels();
+        }
+        
+        float newCardHoverScale = GUILayout.HorizontalSlider(cardHoverScale, 1.0f, 2.0f);
+        if (newCardHoverScale != cardHoverScale)
+        {
+            cardHoverScale = newCardHoverScale;
+            // 悬停缩放会在鼠标悬停时自动应用
+        }
         GUILayout.Label($"悬停缩放: {cardHoverScale:F1}");
         
         GUILayout.Space(5);
         
         GUILayout.Label("导出设置");
-        bool autoSave = GUILayout.Toggle(true, "自动保存");
-        bool backupLevels = GUILayout.Toggle(true, "备份关卡");
+        bool newAutoSave = GUILayout.Toggle(autoSave, "自动保存");
+        if (newAutoSave != autoSave)
+        {
+            autoSave = newAutoSave;
+        }
+        
+        bool newBackupLevels = GUILayout.Toggle(backupLevels, "备份关卡");
+        if (newBackupLevels != backupLevels)
+        {
+            backupLevels = newBackupLevels;
+        }
         
         GUILayout.Label("导出格式");
-        bool exportJSON = GUILayout.Toggle(true, "JSON格式");
-        bool exportXML = GUILayout.Toggle(false, "XML格式");
-        bool exportBinary = GUILayout.Toggle(false, "二进制格式");
+        bool newExportJSON = GUILayout.Toggle(exportJSON, "JSON格式");
+        if (newExportJSON != exportJSON)
+        {
+            exportJSON = newExportJSON;
+        }
+        
+        bool newExportXML = GUILayout.Toggle(exportXML, "XML格式");
+        if (newExportXML != exportXML)
+        {
+            exportXML = newExportXML;
+        }
+        
+        bool newExportBinary = GUILayout.Toggle(exportBinary, "二进制格式");
+        if (newExportBinary != exportBinary)
+        {
+            exportBinary = newExportBinary;
+        }
         
         GUILayout.Space(10);
         
@@ -1235,6 +1670,11 @@ public class SheepLevelEditor2D : MonoBehaviour
             ValidateCurrentLevel();
         }
         
+        if (GUILayout.Button("导出关卡"))
+        {
+            ExportLevel();
+        }
+        
         GUILayout.Space(10);
         
         // 统计信息
@@ -1258,6 +1698,40 @@ public class SheepLevelEditor2D : MonoBehaviour
         
         // 结束滚动视图
         GUILayout.EndScrollView();
+        
+        GUILayout.EndVertical();
+        GUILayout.EndArea();
+        
+        // 调试模式：显示调试信息
+        if (debugMode)
+        {
+            DisplayDebugInfo();
+        }
+    }
+    
+    void DisplayDebugInfo()
+    {
+        // 在屏幕右上角显示调试信息
+        GUILayout.BeginArea(new Rect(Screen.width - 200, 10, 190, 200));
+        GUILayout.BeginVertical("box");
+        GUILayout.Label("调试信息", GUI.skin.box);
+        
+        if (showFPS)
+        {
+            GUILayout.Label($"FPS: {Mathf.RoundToInt(1f / Time.deltaTime)}");
+        }
+        
+        if (showMemory)
+        {
+            GUILayout.Label($"内存: {System.GC.GetTotalMemory(false) / 1024 / 1024}MB");
+        }
+        
+        GUILayout.Label($"卡片数: {levelCards.Count}");
+        GUILayout.Label($"当前层级: {selectedLayer}");
+        GUILayout.Label($"鼠标位置: {Input.mousePosition}");
+        
+        Vector3 mouseWorldPos = editorCamera2D.ScreenToWorldPoint(Input.mousePosition);
+        GUILayout.Label($"世界坐标: {mouseWorldPos}");
         
         GUILayout.EndVertical();
         GUILayout.EndArea();
@@ -1355,6 +1829,135 @@ public class SheepLevelEditor2D : MonoBehaviour
         }
     }
     
+    void ExportLevel()
+    {
+        LevelData2D levelData = new LevelData2D
+        {
+            levelName = currentLevelName,
+            levelId = currentLevelId,
+            cards = new List<CardData2D>(levelCards),
+            totalLayers = totalLayers,
+            gridSize = gridSize,
+            cardSpacing = cardSpacing,
+            cardSize = cardSize,
+            useCustomAreaSize = useCustomAreaSize,
+            areaSize = areaSize,
+            enableLayerPreview = enableLayerPreview,
+            normalLayerColor = normalLayerColor,
+            grayedLayerColor = grayedLayerColor,
+            
+            // 导出高级设置
+            debugMode = debugMode,
+            highPerformance = highPerformance,
+            showFPS = showFPS,
+            showMemory = showMemory,
+            cameraSpeed = cameraSpeed,
+            zoomSpeed = zoomSpeed,
+            inputThrottle = inputThrottle,
+            showGrid = showGrid,
+            showGridNumbers = showGridNumbers,
+            showGridCoordinates = showGridCoordinates,
+            gridLineWidth = gridLineWidth,
+            showCardIDs = showCardIDs,
+            showCardTypes = showCardTypes,
+            cardHoverScale = cardHoverScale,
+            autoSave = autoSave,
+            backupLevels = backupLevels,
+            exportJSON = exportJSON,
+            exportXML = exportXML,
+            exportBinary = exportBinary
+        };
+        
+        string exportPath = Path.Combine(Application.dataPath, "Levels", "Exports");
+        Directory.CreateDirectory(exportPath);
+        
+        if (exportJSON)
+        {
+            string jsonPath = Path.Combine(exportPath, $"Level2D_{currentLevelId}_export.json");
+            string json = JsonUtility.ToJson(levelData, true);
+            File.WriteAllText(jsonPath, json);
+            Debug.Log($"已导出JSON: {jsonPath}");
+        }
+        
+        if (exportXML)
+        {
+            string xmlPath = Path.Combine(exportPath, $"Level2D_{currentLevelId}_export.xml");
+            string xml = ConvertToXML(levelData);
+            File.WriteAllText(xmlPath, xml);
+            Debug.Log($"已导出XML: {xmlPath}");
+        }
+        
+        if (exportBinary)
+        {
+            string binaryPath = Path.Combine(exportPath, $"Level2D_{currentLevelId}_export.bin");
+            byte[] binary = ConvertToBinary(levelData);
+            File.WriteAllBytes(binaryPath, binary);
+            Debug.Log($"已导出二进制: {binaryPath}");
+        }
+        
+        Debug.Log("关卡导出完成！");
+    }
+    
+    string ConvertToXML(LevelData2D levelData)
+    {
+        // 简单的XML转换
+        System.Text.StringBuilder xml = new System.Text.StringBuilder();
+        xml.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        xml.AppendLine("<LevelData>");
+        xml.AppendLine($"  <levelName>{levelData.levelName}</levelName>");
+        xml.AppendLine($"  <levelId>{levelData.levelId}</levelId>");
+        xml.AppendLine($"  <totalLayers>{levelData.totalLayers}</totalLayers>");
+        xml.AppendLine($"  <gridSize>{levelData.gridSize.x},{levelData.gridSize.y}</gridSize>");
+        xml.AppendLine($"  <cardSpacing>{levelData.cardSpacing}</cardSpacing>");
+        xml.AppendLine($"  <cardSize>{levelData.cardSize}</cardSize>");
+        xml.AppendLine("  <cards>");
+        
+        foreach (var card in levelData.cards)
+        {
+            xml.AppendLine("    <card>");
+            xml.AppendLine($"      <id>{card.id}</id>");
+            xml.AppendLine($"      <type>{card.type}</type>");
+            xml.AppendLine($"      <position>{card.position.x},{card.position.y}</position>");
+            xml.AppendLine($"      <layer>{card.layer}</layer>");
+            xml.AppendLine($"      <isVisible>{card.isVisible}</isVisible>");
+            xml.AppendLine("    </card>");
+        }
+        
+        xml.AppendLine("  </cards>");
+        xml.AppendLine("</LevelData>");
+        
+        return xml.ToString();
+    }
+    
+    byte[] ConvertToBinary(LevelData2D levelData)
+    {
+        // 简单的二进制转换
+        using (MemoryStream stream = new MemoryStream())
+        using (BinaryWriter writer = new BinaryWriter(stream))
+        {
+            writer.Write(levelData.levelName);
+            writer.Write(levelData.levelId);
+            writer.Write(levelData.totalLayers);
+            writer.Write(levelData.gridSize.x);
+            writer.Write(levelData.gridSize.y);
+            writer.Write(levelData.cardSpacing);
+            writer.Write(levelData.cardSize);
+            writer.Write(levelData.cards.Count);
+            
+            foreach (var card in levelData.cards)
+            {
+                writer.Write(card.id);
+                writer.Write(card.type);
+                writer.Write(card.position.x);
+                writer.Write(card.position.y);
+                writer.Write(card.layer);
+                writer.Write(card.isVisible);
+            }
+            
+            return stream.ToArray();
+        }
+    }
+    
     // 公共访问方法，用于测试脚本
     public List<CardData2D> GetLevelCards()
     {
@@ -1388,6 +1991,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         }
         cardObjects.Clear();
         UpdateCardDisplay();
+        UpdateCardLabels(); // 更新卡片标签
     }
 }
 
@@ -1412,8 +2016,12 @@ public class CardObject2D : MonoBehaviour
     
     void OnMouseEnter()
     {
+        // 获取编辑器实例以访问设置
+        SheepLevelEditor2D editor = FindObjectOfType<SheepLevelEditor2D>();
+        float hoverScale = editor != null ? editor.cardHoverScale : 1.2f;
+        
         // 鼠标悬停时放大卡片并高亮
-        transform.localScale = Vector3.one * (baseCardSize * 1.2f);
+        transform.localScale = Vector3.one * (baseCardSize * hoverScale);
         
         // 悬停时使用高亮颜色
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();

@@ -227,6 +227,7 @@ GameObject:
   - component: {fileID: 264089273}
   - component: {fileID: 264089272}
   - component: {fileID: 264089274}
+  - component: {fileID: 264089276}
   m_Layer: 0
   m_Name: LevelEditor2D
   m_TagString: Untagged
@@ -266,6 +267,7 @@ MonoBehaviour:
   isEditMode: 1
   showGrid: 1
   selectedLayer: 0
+  showGridInGUI: 1
   editorCamera2D: {fileID: 489573530}
   cameraZoom: 5
   cameraPosition: {x: 0, y: 0}
@@ -274,6 +276,29 @@ MonoBehaviour:
   layerMaskHeight: 0.1
   showPlaceableArea: 1
   placeableAreaVisualizer: {fileID: 1378395891}
+  areaSize: {x: 8.4, y: 8.4}
+  useCustomAreaSize: 0
+  enableLayerPreview: 1
+  normalLayerColor: {r: 1, g: 1, b: 1, a: 1}
+  grayedLayerColor: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
+  debugMode: 0
+  highPerformance: 1
+  showFPS: 0
+  showMemory: 0
+  cameraSpeed: 1
+  zoomSpeed: 1
+  inputThrottle: 0.1
+  showGridNumbers: 0
+  showGridCoordinates: 0
+  gridLineWidth: 0.02
+  showCardIDs: 0
+  showCardTypes: 0
+  cardHoverScale: 1.2
+  autoSave: 1
+  backupLevels: 1
+  exportJSON: 1
+  exportXML: 0
+  exportBinary: 0
 --- !u!4 &264089273
 Transform:
   m_ObjectHideFlags: 0
@@ -303,6 +328,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   editor2D: {fileID: 264089272}
   showDebugInfo: 1
+--- !u!114 &264089276
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 264089271}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efda651f9eabe46fabb39fe1ca89ec70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  runTestOnStart: 1
+  showDebugInfo: 1
+  testPosition: {x: 16, y: -2}
 --- !u!1 &489573528
 GameObject:
   m_ObjectHideFlags: 0
