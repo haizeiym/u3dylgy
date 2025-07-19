@@ -53,6 +53,7 @@ public class LevelData2D
     public bool exportBinary;
 }
 
+[System.Serializable]
 public class SheepLevelEditor2D : MonoBehaviour
 {
     [Header("编辑器设置")]
@@ -1802,7 +1803,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         return color;
     }
     
-    void ValidateCurrentLevel()
+    public void ValidateCurrentLevel()
     {
         LevelData2D currentLevel = new LevelData2D
         {
@@ -1829,7 +1830,7 @@ public class SheepLevelEditor2D : MonoBehaviour
         }
     }
     
-    void ExportLevel()
+    public void ExportLevel()
     {
         LevelData2D levelData = new LevelData2D
         {
