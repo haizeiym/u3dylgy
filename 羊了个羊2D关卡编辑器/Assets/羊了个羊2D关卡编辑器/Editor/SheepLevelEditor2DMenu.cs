@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEditor;
 
+namespace YangLeGeYang2D.LevelEditor.Editor
+{
+
 public class SheepLevelEditor2DMenu
 {
     // 统一的一级菜单：羊了个羊
@@ -326,4 +329,5 @@ public class SheepLevelEditor2DMenu
         
         Object.DestroyImmediate(texture);
     }
-} 
+}
+}

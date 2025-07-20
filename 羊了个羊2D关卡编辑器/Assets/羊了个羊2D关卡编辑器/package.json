@@ -1,0 +1,74 @@
+{
+  "name": "com.yanglegeyang2d.leveleditor",
+  "version": "1.0.2",
+  "displayName": "羊了个羊2D关卡编辑器",
+  "description": "一个用于创建羊了个羊2D关卡的Unity编辑器插件，提供完整的关卡编辑功能，包括卡片放置、网格系统、层级管理、可视化预览等。",
+  "unity": "2021.3",
+  "dependencies": {},
+  "keywords": [
+    "level editor",
+    "2d",
+    "puzzle",
+    "card game",
+    "yanglegeyang",
+    "关卡编辑器",
+    "羊了个羊"
+  ],
+  "author": {
+    "name": "wn",
+    "email": "",
+    "url": "https://github.com/haizeiym/u3dylgy.git"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/haizeiym/u3dylgy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/haizeiym/u3dylgy/issues"
+  },
+  "homepage": "https://github.com/haizeiym/u3dylgy#readme",
+  "documentationUrl": "https://github.com/haizeiym/u3dylgy/wiki",
+  "changelogUrl": "https://github.com/haizeiym/u3dylgy/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/haizeiym/u3dylgy/blob/main/LICENSE",
+  "samples": [
+    {
+      "displayName": "基础示例",
+      "description": "包含基础关卡编辑功能的示例场景和脚本",
+      "path": "Samples~/BasicExample"
+    },
+    {
+      "displayName": "高级功能示例",
+      "description": "展示高级功能如层级预览、自定义区域等的示例",
+      "path": "Samples~/AdvancedExample"
+    }
+  ],
+  "unity": "2021.3",
+  "dependencies": {},
+  "keywords": [
+    "level editor",
+    "2d",
+    "puzzle",
+    "card game",
+    "yanglegeyang",
+    "关卡编辑器",
+    "羊了个羊"
+  ],
+  "author": {
+    "name": "wn",
+    "email": "",
+    "url": "https://github.com/haizeiym/u3dylgy.git"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/haizeiym/u3dylgy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/haizeiym/u3dylgy/issues"
+  },
+  "homepage": "https://github.com/haizeiym/u3dylgy#readme",
+  "documentationUrl": "https://github.com/haizeiym/u3dylgy/wiki",
+  "changelogUrl": "https://github.com/haizeiym/u3dylgy/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/haizeiym/u3dylgy/blob/main/LICENSE"
+} 

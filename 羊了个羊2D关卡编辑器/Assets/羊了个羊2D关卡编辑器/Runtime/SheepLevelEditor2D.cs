@@ -4,6 +4,9 @@ using UnityEngine;
 using System.IO;
 using System;
 
+namespace YangLeGeYang2D.LevelEditor
+{
+
 [System.Serializable]
 public class CardData2D
 {
@@ -1913,4 +1916,5 @@ public class CardObject2D : MonoBehaviour
             }
         }
     }
-} 
+}
+}
