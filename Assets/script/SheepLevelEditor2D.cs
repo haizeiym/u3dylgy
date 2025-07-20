@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using System;
+using YangLeGeYang2D.LevelEditor;
 
 [System.Serializable]
 public class CardData2D
@@ -1669,15 +1670,56 @@ public class SheepLevelEditor2D : MonoBehaviour
     
     public void ValidateCurrentLevel()
     {
-        LevelData2D currentLevel = new LevelData2D
+        // 创建兼容的LevelData2D对象
+        YangLeGeYang2D.LevelEditor.LevelData2D currentLevel = new YangLeGeYang2D.LevelEditor.LevelData2D
         {
             levelName = currentLevelName,
             levelId = currentLevelId,
-            cards = new List<CardData2D>(levelCards),
+            cards = new List<YangLeGeYang2D.LevelEditor.CardData2D>(),
             totalLayers = totalLayers,
             gridSize = gridSize,
-            cardSpacing = cardSpacing
+            cardSpacing = cardSpacing,
+            cardSize = new Vector2(cardSize, cardSize),
+            useCustomAreaSize = useCustomAreaSize,
+            areaSize = areaSize,
+            enableLayerPreview = enableLayerPreview,
+            normalLayerColor = normalLayerColor,
+            grayedLayerColor = grayedLayerColor,
+            debugMode = debugMode,
+            highPerformance = highPerformance,
+            showFPS = showFPS,
+            showMemory = showMemory,
+            cameraSpeed = cameraSpeed,
+            zoomSpeed = zoomSpeed,
+            inputThrottle = inputThrottle,
+            showGrid = showGrid,
+            showGridNumbers = showGridNumbers,
+            showGridCoordinates = showGridCoordinates,
+            gridLineWidth = gridLineWidth,
+            showCardIDs = showCardIDs,
+            showCardTypes = showCardTypes,
+            cardHoverScale = cardHoverScale,
+            autoSave = autoSave,
+            backupLevels = backupLevels,
+            exportJSON = exportJSON,
+            exportXML = exportXML,
+            exportBinary = exportBinary,
+            irregularShapes = new List<YangLeGeYang2D.LevelEditor.IrregularShapeData>()
         };
+        
+        // 转换卡片数据
+        foreach (var card in levelCards)
+        {
+            currentLevel.cards.Add(new YangLeGeYang2D.LevelEditor.CardData2D
+            {
+                id = card.id,
+                type = card.type,
+                position = card.position,
+                layer = card.layer,
+                isVisible = card.isVisible,
+                blockingCards = card.blockingCards
+            });
+        }
         
         LevelValidator2D.ValidationResult result = LevelValidator2D.ValidateLevel(currentLevel);
         string report = LevelValidator2D.GetValidationReport(result);
